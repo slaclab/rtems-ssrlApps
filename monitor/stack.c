@@ -28,6 +28,8 @@ Context_Control		regs;
 
 	tcb = _Thread_Get(id, &loc);
 	if (OBJECTS_LOCAL!=loc || !tcb) {
+		if (tcb)
+			_Thread_Enable_dispatch();
 		fprintf(stderr,"Id %x not found on local node\n",id);
 		return -1;
 	}
