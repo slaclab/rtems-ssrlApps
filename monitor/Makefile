@@ -78,7 +78,7 @@ CLOBBER_ADDITIONS +=
 all:	${ARCH} $(SRCS) $(PGMS)
 
 $(filter %.obj, $(PGMS)): ${OBJS} ${LINK_FILES}
-	$(LD_FOR_TARGET) $(AM_CFLAGS) $(AM_LDFLAGS) -r -o $@ $(LINK_OBJS) $(LD_PATHS:%=-L%) $(LINK_LIBS)
+	$(LD) $(AM_CFLAGS) $(AM_LDFLAGS) -r -o $@ $(LINK_OBJS) $(LD_PATHS:%=-L%) $(LINK_LIBS)
 
 $(filter %.exe, $(PGMS)): ${OBJS} ${LINK_FILES}
 	$(make-exe)
