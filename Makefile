@@ -171,6 +171,11 @@ include $(CONFIG.CC)
 
 install: $(INSTDIRS) $(BUILDDIRS:%=%/Makefile)
 
+# How to make a tarball of this package
+REVISION=$(filter-out $$%,$$Name$$)
+tar:
+	@$(make-tar)
+
 CLOBBER_ADDITIONS+=$(BUILDDIRS)
 
 %.$(BUILDEXT)/Makefile:
