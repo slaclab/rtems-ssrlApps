@@ -34,6 +34,9 @@ HOSTLD:=$(LD)
 CC_FOR_BUILD = $(HOSTCC)
 export CC_FOR_BUILD
 #
+ifndef RTEMS_MAKEFILE_PATH
+$(error RTEMS_MAKEFILE_PATH not set - must point to ssrlApplications config dir)
+endif
 include $(RTEMS_MAKEFILE_PATH)/Makefile.inc
 # we want RTEMS_BSP_FAMILY and RTEMS_CPU now
 include $(RTEMS_CUSTOM)
@@ -185,9 +188,13 @@ tar:
 
 CLOBBER_ADDITIONS+=$(BUILDDIRS)
 
+ifndef RTEMS_SITE_MANDIR
+RTEMS_SITE_MANDIR=$(RTEMS_SITE_DIR)/man
+endif
+
 %.$(BUILDEXT)/Makefile:
 	test -d $(dir $@) || $(MKDIR) $(dir $@)
-	cd	$(dir $@) ; ../$(@:%.$(BUILDEXT)/Makefile=%)/configure --build=`../$(@:%.$(BUILDEXT)/Makefile=%)/config.guess` --host=$(RTEMS_CPU)-rtems --disable-nls --prefix=$(RTEMS_SITE_INSTALLDIR) --with-newlib CC=$(word 1,$(CC)) CFLAGS="$(CPU_CFLAGS) $(CFLAGS)" CXXFLAGS="$(CPU_CFLAGS) $(CXXFLAGS)" --enable-multilib=no
+	cd	$(dir $@) ; ../$(@:%.$(BUILDEXT)/Makefile=%)/configure --build=`../$(@:%.$(BUILDEXT)/Makefile=%)/config.guess` --host=$(RTEMS_CPU)-rtems --disable-nls --prefix=$(RTEMS_SITE_INSTALLDIR) --mandir=$(RTEMS_SITE_MANDIR) --with-newlib CC=$(word 1,$(CC)) CFLAGS="$(CPU_CFLAGS) $(CFLAGS)" CXXFLAGS="$(CPU_CFLAGS) $(CXXFLAGS)" --enable-multilib=no
 
 $(INSTDIRS) $(RTEMS_SITE_DIR):
 	$(MKDIR) -p $@

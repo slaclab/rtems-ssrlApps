@@ -23,15 +23,18 @@ ifndef RTEMS_SITE_WHICH
 RTEMS_SITE_WHICH = $(RTEMS_WHICH)
 endif
 
+RTEMS_SITE_MANDIR=/opt/rtems4.6.0CD/doc/man
+
+
 ifndef RTEMS_TOP
 ###RTEMS_TOP = /afs/slac/package/rtems/$(RTEMS_WHICH)
-RTEMS_TOP = /opt
+RTEMS_TOP = /opt/rtems4.6.0CD
 endif
 
 #Where to install/grab SSRL packages
 ifndef RTEMS_SSRLAPPS_DIR
 ###RTEMS_SSRLAPPS_DIR = /afs/slac/g/spear/rtemsApplications/$(RTEMS_SITE_WHICH)
-RTEMS_SSRLAPPS_DIR = $(RTEMS_TOP)/rtems4.6.0CD/ssrlApps
+RTEMS_SSRLAPPS_DIR = $(RTEMS_TOP)/target/ssrlApps
 endif
 
 #Where to install/grab local packages
@@ -39,13 +42,26 @@ ifndef RTEMS_SITE_DIR
 RTEMS_SITE_DIR = $(RTEMS_SSRLAPPS_DIR)
 endif
 
+ifndef RTEMS_SITE_MANDIR
+RTEMS_SITE_MANDIR = $(RTEMS_SSRLAPPS_DIR)
+endif
+
+#AFS:
+#RTEMS_HOST_ARCH=@sys
+
+ifndef RTEMS_HOST_ARCH
+ifdef EPICS_HOST_ARCH
+RTEMS_HOST_ARCH=$(EPICS_HOST_ARCH)
+endif
+RTEMS_HOST_ARCH=i386_linux24
+endif
 
 #################################################################
 # There should be no need to change anything below here
 
 #for EPICS
 ##RTEMS_BASE = $(RTEMS_TOP)/tools/@sys
-RTEMS_BASE = $(RTEMS_TOP)/rtems4.6.0CD/@sys
+RTEMS_BASE = $(RTEMS_TOP)/host/$(RTEMS_HOST_ARCH)
 
 # An ugly hack. In fact, the <top>/make/custom/<bsp>.cfg
 # files need to be patched to define RTEMS_CPU _prior_
@@ -56,7 +72,7 @@ RTEMS_CPU = powerpc
 endif
 
 #RTEMS 
-prefix = $(RTEMS_TOP)/rtems4.6.0CD
+prefix = $(RTEMS_TOP)/target
 #RTEMS (target specific) libraries
 exec_prefix = $(prefix)/$(RTEMS_CPU)-rtems
 #Toolchain
