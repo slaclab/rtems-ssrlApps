@@ -1,4 +1,5 @@
 #include <bfd.h>
+#include <libiberty.h>
 #include <stdio.h>
 #include "tab.h"
 
@@ -6,38 +7,57 @@
 #include <mdbg.h>
 #endif
 
+/* an output segment description */
+typedef struct SegmentRec_ {
+	PTR				chunk;		/* pointer to memory */
+	unsigned long	vmacalc;	/* working counter */
+	unsigned long	size;		/* initial 'size' of the segment is its aligment */
+	unsigned		attributes; /* such as 'read-only' etc.; currently unused */
+} SegmentRec, *Segment;
+
+#define NUM_SEGS 1
+
 typedef struct LinkDataRec_ {
-	 void		*chunk;
-	 asymbol	**st;
-	 asection	*tsill;
+	SegmentRec		segs[NUM_SEGS];
+	asymbol			**st;
+	asection		*tsill;
 } LinkDataRec, *LinkData;
+
+/* how to decide where a particular section should go */
+static Segment
+segOf(LinkData ld, asection *sect)
+{
+	/* multiple sections not supported (yet) */
+	return &ld->segs[0];
+}
 
 static void
 s_count(bfd *abfd, asection *sect, PTR arg)
 {
-long *sizep=(long*)arg;
+Segment		seg=segOf((LinkData)arg, sect);
 	printf("Section %s, flags 0x%08x\n",
 			sect->name, sect->flags);
-	printf("size: %i\n",
-			bfd_section_size(abfd,sect));
+	printf("size: %i, alignment %i\n",
+			bfd_section_size(abfd,sect),
+			(1<<bfd_section_alignment(abfd,sect)));
 	if (SEC_ALLOC & sect->flags) {
-		/* TODO align */
-		*sizep+=bfd_section_size(abfd,sect);
+		seg->size=align_power(seg->size, bfd_get_section_alignment(abfd,sect));
+		seg->size+=bfd_section_size(abfd,sect);
 	}
 }
 
 static void
 s_setvma(bfd *abfd, asection *sect, PTR arg)
 {
-char **addr=(char**)arg;
+Segment		seg=segOf((LinkData)arg, sect);
 
 	if (SEC_ALLOC & sect->flags) {
-		/* TODO align */
+		seg->vmacalc=align_power(seg->vmacalc, bfd_get_section_alignment(abfd,sect));
 		printf("%s allocated at 0x%08x\n",
 				bfd_get_section_name(abfd,sect),
-				*addr);
-		bfd_set_section_vma(abfd,sect,*addr);
-		*addr+=bfd_section_size(abfd,sect);
+				seg->vmacalc);
+		bfd_set_section_vma(abfd,sect,seg->vmacalc);
+		seg->vmacalc+=bfd_section_size(abfd,sect);
 		sect->output_section = sect;
 	}
 }
@@ -67,7 +87,7 @@ char		buf[1000];
 			free(cr);
 			return;
 		}
-		bfd_get_section_contents(abfd,sect,bfd_get_section_vma(abfd,sect),0,bfd_section_size(abfd,sect));
+		bfd_get_section_contents(abfd,sect,(PTR)bfd_get_section_vma(abfd,sect),0,bfd_section_size(abfd,sect));
 		for (i=0; i<sect->reloc_count; i++) {
 			arelent *r=cr[i];
 			printf("relocating (%s=",
@@ -83,7 +103,7 @@ char		buf[1000];
 				if ((err=bfd_perform_relocation(
 					abfd,
 					r,
-					bfd_get_section_vma(abfd,sect),
+					(PTR)bfd_get_section_vma(abfd,sect),
 					sect,
 					0 /* output bfd */,
 					0)))
@@ -140,16 +160,16 @@ int
 main(int argc, char **argv)
 {
 bfd 			*abfd=0;
-long			total;
-LinkDataRec		ldr={0};
-unsigned char	*addr;
-int				rval=1;
+LinkDataRec		ldr;
+int				rval=1,i;
 TstSym			sm;
 
 	if (argc<2) {
 		fprintf(stderr,"Need filename arg\n");
 		goto cleanup;
 	}
+	memset(&ldr,0,sizeof(ldr));
+
 	bfd_init();
 #ifdef USE_MDBG
 	mdbgInit();
@@ -159,8 +179,13 @@ TstSym			sm;
 		fprintf(stderr,"Invalid format\n");
 		goto cleanup;
 	}
-	total=0;
-	bfd_map_over_sections(abfd, s_count, &total);
+	/* set aligment for our segments; we just have to make sure
+	 * the initial aligment is worse than what 'malloc()' gives us.
+	 */
+	for (i=0; i<NUM_SEGS; i++)
+		ldr.segs[i].size=1; /* first section in this segment will align this */
+
+	bfd_map_over_sections(abfd, s_count, &ldr);
 	ldr.tsill=bfd_make_section_old_way(abfd,".tsillsym");
 	ldr.tsill->output_section=ldr.tsill;
 
@@ -174,8 +199,10 @@ TstSym			sm;
 	}
 
 
-	addr=ldr.chunk=xmalloc(total);
-	bfd_map_over_sections(abfd, s_setvma, &addr);
+	/* allocate segment space */
+	for (i=0; i<NUM_SEGS; i++)
+		ldr.segs[i].vmacalc=(unsigned long)ldr.segs[i].chunk=xmalloc(ldr.segs[i].size);
+	bfd_map_over_sections(abfd, s_setvma, &ldr);
 	if (!(ldr.st=slurp_symtab(abfd,&ldr))) {
 		fprintf(stderr,"Error reading symbol table\n");
 		goto cleanup;
@@ -185,7 +212,8 @@ TstSym			sm;
 cleanup:
 	if (ldr.st) free(ldr.st);
 	if (abfd) bfd_close_all_done(abfd);
-	if (ldr.chunk) free(ldr.chunk);
+	for (i=0; i<NUM_SEGS; i++)
+		if (ldr.segs[i].chunk) free(ldr.segs[i].chunk);
 #ifdef USE_MDBG
 	printf("Memory leaks found: %i\n",mdbgPrint(0,0));
 #endif
