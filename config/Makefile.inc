@@ -53,6 +53,17 @@ define make-obj
 #	$(LD) $(AM_LDFLAGS) $(LDFLAGS) -r -o $@ $(OBJS) $(LINK_LIBS)
 endef
 
+#Tarball support
+define make-tar
+	if [ -z $(REVISION) ] ; then \
+        echo "I need a version checked out with a revision tag to make a tarball";\
+        exit 1;\
+    else \
+        echo tarring revision $(REVISION);\
+        tar cfz $(if $(wildcard tarexcl),x tarexcl) $(REVISION).tgz -C .. $(shell basename `pwd`) ;\
+    fi
+endef
+
 # continue with generic/common settings
 
 include $(RTEMS_MAKEFILE_PATH)/Makefile.inc.generic
