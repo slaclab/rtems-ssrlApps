@@ -74,7 +74,7 @@ rtems_monitor_command_entry_t entries[] = {
 	{
 		"memUsageDump",
 		"memUsageDump; show used/free amount of RTEMS workspace and malloc heap",
-		0,
+		1,
 		fnwrap,
 		(unsigned32)memUsageDump,
 		0

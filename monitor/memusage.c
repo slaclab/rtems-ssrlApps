@@ -6,13 +6,19 @@
 #include <stdio.h>
 
 int
-memUsageDump()
+memUsageDump(int doit)
 {
 Heap_Information_block info;
 int	rval, heapsz;
 
 	fprintf(stderr,"WARNING: 'memUsageDump' temporarily disables thread dispatching\n");
 	fprintf(stderr,"         thus killing real-time preformance! Use for diagnostics only...\n");
+
+	if ( !doit ) {
+		fprintf(stderr,"...bailing out. Call with a nonzero argument to proceed\n");
+		return -1;
+	} 
+
 	_Thread_Disable_dispatch();
 	rval = (HEAP_GET_INFORMATION_SUCCESSFUL !=
 			_Heap_Get_information( &_Workspace_Area, &info));
