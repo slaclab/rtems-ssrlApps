@@ -22,10 +22,14 @@ ifndef RTEMS_SITE_WHICH
 RTEMS_SITE_WHICH = $(RTEMS_WHICH)
 endif
 
+ifndef RTEMS_TOP
 RTEMS_TOP = /afs/slac/package/rtems/$(RTEMS_WHICH)
+endif
 
 #Where to install, where to grab local packages
+ifndef RTEMS_SITE_DIR
 RTEMS_SITE_DIR = /afs/slac/g/spear/rtemsApplications/$(RTEMS_SITE_WHICH)
+endif
 
 #################################################################
 # There should be no need to change anything below here
