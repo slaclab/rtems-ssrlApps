@@ -18,6 +18,8 @@ RTEMS_TOP = /afs/slac/package/rtems/$(RTEMS_WHICH)
 #Where to install, where to grab local packages
 RTEMS_SITE_DIR = /afs/slac/g/spear/rtemsApplications/$(RTEMS_WHICH)
 
+RTEMS_MAKEFILE_PATH = /afs/slac/g/spear/rtemsApplications/config
+
 #################################################################
 # There should be no need to change anything below here
 
