@@ -1,6 +1,7 @@
 #include <bfd.h>
 #include <libiberty.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "tab.h"
 
 #ifdef USE_MDBG
@@ -26,10 +27,7 @@ typedef struct SegmentRec_ {
 typedef struct LinkDataRec_ {
 	SegmentRec		segs[NUM_SEGS];
 	asymbol			**st;
-	asection		*csect;		/* new common symbols' section */
-	int				errors;
-	unsigned long	nSyms;		/* number of symbols defined by the loaded file */
-	unsigned long	nSymChars;	/* size we need for the string table */
+	int			errors;
 } LinkDataRec, *LinkData;
 
 /* how to decide where a particular section should go */
@@ -54,8 +52,24 @@ elf_symbol_type *esp;
 			tst<<=1;
 	return rval;
 }
+
+/* we sort in descending order; hence the routine must return b-a */
+static int
+align_size_compare(const void *a, const void *b)
+{
+elf_symbol_type *espa, *espb;
+asymbol			*spa=*(asymbol**)a;
+asymbol			*spb=*(asymbol**)b;
+
+	return
+		((espa=elf_symbol_from(bfd_asymbol_bfd(spa),spa)) &&
+	     (espb=elf_symbol_from(bfd_asymbol_bfd(spb),spb)))
+		? (espb->internal_elf_sym.st_size - espa->internal_elf_sym.st_size)
+		: 0;
+}
 #else
-#define get_align_pwr(abfd,sp) (0)
+#define get_align_pwr(abfd,sp)	0
+#define align_size_compare		0
 #endif
 
 static void
@@ -158,36 +172,31 @@ char		buf[1000];
 	}
 }
 
-static asymbol **
-slurp_symtab(bfd *abfd, LinkData ld)
+/* resolve undefined and common symbol references;
+ * The routine also rearranges the symbol table for
+ * all common symbols that must be created to be located
+ * at the beginning of the symbol list.
+ *
+ * RETURNS:
+ *   value >= 0 : OK, number of new common symbols
+ *   value <0   : -number of errors (unresolved refs or multiple definitions)
+ *
+ * SIDE EFFECTS:
+ *   - all new common symbols moved to the beginning of the table
+ *   - resolved undef or common slots are replaced by new symbols
+ *     pointing to the ABS section
+ *   - KEEP flag is set for all globals defined by this object.
+ */
+static int
+resolve_syms(bfd *abfd, asymbol **syms)
 {
-asymbol 		**rval=0,*sp;
-int				i,errs=0;
-long			ss;
-unsigned long	csect_size=0;
-unsigned		num_new_commons=0;
-
-	if (!(HAS_SYMS & bfd_get_file_flags(abfd))) {
-		fprintf(stderr,"No symbols found\n");
-		return 0;
-	}
-	if ((ss=bfd_get_symtab_upper_bound(abfd))<0) {
-		fprintf(stderr,"Fatal error: illegal symtab size\n");
-		return 0;
-	}
-	if (ss) {
-		rval=(asymbol**)xmalloc(ss);
-	}
-	if (bfd_canonicalize_symtab(abfd,rval) <= 0) {
-		fprintf(stderr,"Canonicalizing symtab failed\n");
-		free(rval);
-		return 0;
-	}
+asymbol *sp;
+int		i,num_new_commons=0,errs=0;
 
 	/* resolve undefined and common symbols;
 	 * find name clashes
 	 */
-	for (i=0; sp=rval[i]; i++) {
+	for (i=0; sp=syms[i]; i++) {
 		asection *sect=bfd_get_section(sp);
 		TstSym		ts;
 
@@ -203,7 +212,11 @@ unsigned		num_new_commons=0;
 		if (bfd_is_und_section(sect)) {
 
 			if (ts) {
-				sp=rval[i]=bfd_make_empty_symbol(abfd);
+				/* Resolved reference; replace the symbol pointer
+				 * in this slot with a new asymbol holding the
+				 * resolved value.
+				 */
+				sp=syms[i]=bfd_make_empty_symbol(abfd);
 				bfd_asymbol_name(sp) = bfd_asymbol_name(ts);
 				sp->value=ts->value;
 				sp->section=bfd_abs_section_ptr;
@@ -213,13 +226,13 @@ unsigned		num_new_commons=0;
 				errs++;
 			}
 		}
-		else if (bfd_is_com_section(sp)) {
+		else if (bfd_is_com_section(sect)) {
 			if (ts) {
 				/* use existing value */
 				sp = bfd_make_empty_symbol(abfd);
 				/* TODO: check size and alignment */
 				/* copy pointer to old name */
-				bfd_asymbol_name(sp) = bfd_asymbol_name(rval[i]);
+				bfd_asymbol_name(sp) = bfd_asymbol_name(syms[i]);
 				sp->value=ts->value;
 				sp->section=bfd_abs_section_ptr;
 				sp->flags=BSF_GLOBAL;
@@ -228,21 +241,16 @@ unsigned		num_new_commons=0;
 				asymbol *swap;
 
 				/* we'll have to add it to our internal symbol table */
-				ld->nSyms++;
-				ld->nSymChars+=strlen(bfd_asymbol_name(sp))+1;
 				sp->flags |= BSF_KEEP;
-
-				/* increase section size */
-				csect_size += bfd_asymbol_value(sp);
 
 				/* this is a new common symbol; we move all of these
 				 * to the beginning of the 'st' list
 				 */
-				swap=rval[num_new_commons];
-				rval[num_new_commons++]=sp;
+				swap=syms[num_new_commons];
+				syms[num_new_commons++]=sp;
 				sp=swap;
 			}
-			rval[i]=sp; /* use new instance */
+			syms[i]=sp; /* use new instance */
 		} else {
 			if (ts) {
 				fprintf(stderr,"Symbol '%s' already exists\n",bfd_asymbol_name(sp));
@@ -253,55 +261,115 @@ unsigned		num_new_commons=0;
 				 */
 			} else {
 				/* new symbol defined by the loaded object; account for it */
-				ld->nSyms++;
-				ld->nSymChars+=strlen(bfd_asymbol_name(sp))+1;
 				/* mark for second pass */
 				sp->flags |= BSF_KEEP;
 			}
 		}
 	}
 
-	/* TODO
-		sort st[0]..st[num_new_commons-1] by alignment
-		 * (MUST be powers of two)
-	 */
+	return errs ? -errs : num_new_commons;
+}
 
-	/* TODO buildCexpSymtab(); */
+/* make a dummy section holding the new common data introduced by
+ * the newly loaded file.
+ *
+ * RETURNS: 0 on failure, nonzero on success
+ */
+static int
+make_new_commons(bfd *abfd, asymbol **syms, int num_new_commons)
+{
+unsigned long	i,val;
+asection	*csect;
 
 	if (num_new_commons) {
-		unsigned long tmp,val;
+		/* make a dummy section for new common symbols */
+		csect=bfd_make_section(abfd,bfd_get_unique_section_name(abfd,".dummy",0));
+		if (!csect) {
+			bfd_perror("Creating dummy section");
+			return -1;
+		}
+		csect->flags |= SEC_ALLOC;
 
 		/* our common section alignment is the maximal alignment
 		 * found during the sorting process which is the alignment
 		 * of the first element...
 		 */
-		bfd_section_alignment(abfd,ld->csect) = get_align_pwr(abfd,rval[0]);
+		bfd_section_alignment(abfd,csect) = get_align_pwr(abfd,syms[0]);
 
 		/* set new common symbol values */
 		for (val=0,i=0; i<num_new_commons; i++) {
 			asymbol *sp;
+			int tsill;
 
 			sp = bfd_make_empty_symbol(abfd);
 
-			val=align_power(val,get_align_pwr(abfd,rval[i]));
+			val=align_power(val,(tsill=get_align_pwr(abfd,syms[i])));
+printf("TSILL align_pwr %i\n",tsill);
 			/* copy pointer to old name */
-			bfd_asymbol_name(sp) = bfd_asymbol_name(rval[i]);
+			bfd_asymbol_name(sp) = bfd_asymbol_name(syms[i]);
 			sp->value=val;
-			sp->section=ld->csect;
-			sp->flags=rval[i]->flags;
-			val+=rval[i]->value;
-			rval[i] = sp;
+			sp->section=csect;
+			sp->flags=syms[i]->flags;
+			val+=syms[i]->value;
+			syms[i] = sp;
 		}
 		
-		bfd_set_section_size(abfd, ld->csect, csect_size);
+		bfd_set_section_size(abfd, csect, val);
+	}
+	return 0;
+}
+
+static asymbol **
+slurp_symtab(bfd *abfd)
+{
+asymbol 		**rval=0;
+long			i;
+long			num_new_commons;
+
+	if (!(HAS_SYMS & bfd_get_file_flags(abfd))) {
+		fprintf(stderr,"No symbols found\n");
+		return 0;
+	}
+	if ((i=bfd_get_symtab_upper_bound(abfd))<0) {
+		fprintf(stderr,"Fatal error: illegal symtab size\n");
+		return 0;
+	}
+	if (i) {
+		rval=(asymbol**)xmalloc(i);
+	}
+	if (bfd_canonicalize_symtab(abfd,rval) <= 0) {
+		bfd_perror("Canonicalizing symtab");
+		free(rval);
+		return 0;
 	}
 
-	if (errs) {
-		/* release resources */
+
+	if ((num_new_commons=resolve_syms(abfd,rval))<0) {
+		free(rval);
+		return 0;
+	}
+		
+	/*
+	 *	sort st[0]..st[num_new_commons-1] by alignment
+	 */
+	if (align_size_compare && num_new_commons)
+		qsort((void*)rval, num_new_commons, sizeof(*rval), align_size_compare);
+
+	/* Now, everything is in place to build our internal symbol table
+	 * representation.
+	 * We cannot do this later, because the size information will be lost.
+	 * However, we cannot provide the values yet; this can only be done
+	 * after relocation has been performed.
+	 */
+
+	/* TODO buildCexpSymtab(); */
+
+	if (0!=make_new_commons(abfd,rval,num_new_commons)) {
 		free(rval);
 		/* TODO destroyCexpSymtab(); */
 		return 0;
 	}
+
 	return rval;
 }
 
@@ -350,15 +418,7 @@ printf("TSILL: bfd_log2(1025)=%i\n",bfd_log2(1025));
 		goto cleanup;
 	}
 
-	/* make a dummy section for new common symbols */
-	ldr.csect=bfd_make_section(abfd,bfd_get_unique_section_name(abfd,".dummy",0));
-	if (!ldr.csect) {
-		bfd_perror("Creating dummy section");
-		goto cleanup;
-	}
-	ldr.csect->flags |= SEC_ALLOC;
-
-	if (!(ldr.st=slurp_symtab(abfd,&ldr))) {
+	if (!(ldr.st=slurp_symtab(abfd))) {
 		fprintf(stderr,"Error creating symbol table\n");
 		goto cleanup;
 	}
