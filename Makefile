@@ -169,7 +169,14 @@ prep:
 include $(RTEMS_ROOT)/make/directory.cfg
 include $(CONFIG.CC)
 
-install: $(INSTDIRS) $(BUILDDIRS:%=%/Makefile)
+# install 'config' to the install area
+install-config: $(RTEMS_SITE_DIR)
+	if [ `pwd` != `(cd $<; pwd)` ] ; then 			\
+		$(RM) -r $</config	;						\
+		tar cf - ./config | ( cd $< ; tar xfv - )	\
+	fi
+
+install: $(INSTDIRS) $(BUILDDIRS:%=%/Makefile) install-config
 
 # How to make a tarball of this package
 REVISION=$(filter-out $$%,$$Name$$)
@@ -182,5 +189,5 @@ CLOBBER_ADDITIONS+=$(BUILDDIRS)
 	test -d $(dir $@) || $(MKDIR) $(dir $@)
 	cd	$(dir $@) ; ../$(@:%.$(BUILDEXT)/Makefile=%)/configure --build=`../$(@:%.$(BUILDEXT)/Makefile=%)/config.guess` --host=$(RTEMS_CPU)-rtems --disable-nls --prefix=$(RTEMS_SITE_INSTALLDIR) --with-newlib CC=$(word 1,$(CC))
 
-$(INSTDIRS):
+$(INSTDIRS) $(RTEMS_SITE_DIR):
 	$(MKDIR) -p $@
