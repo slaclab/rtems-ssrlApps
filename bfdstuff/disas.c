@@ -2,6 +2,10 @@
 #include "dis-asm.h"
 #include <stdio.h>
 
+#ifdef USE_MDBG
+#include <mdbg.h>
+#endif
+
 const char	*target="i686-pc-linux-gnu";
 static int	dynsym=0;
 
@@ -39,7 +43,7 @@ main(int argc, char **argv)
 bfd			*abfd;
 char		*fnam=argc > 1 ? argv[1] : argv[0];
 long		nsyms;
-PTR			minisyms;
+PTR			minisyms=0;
 char		*msp;
 unsigned	sz,i;
 asymbol		*store_s, *as;
@@ -53,6 +57,9 @@ bfd_vma		addr;
 		fprintf(stderr,"Unable to set default BFD target\n");
 		return 1;
 	}
+#ifdef USE_MDBG
+	mdbgInit();
+#endif
 	target = argc>2 ? argv[2] : 0;
 	abfd=bfd_openr(fnam, target);
 	if (!abfd) {
@@ -66,8 +73,10 @@ bfd_vma		addr;
 	}
 	matching=bfd_target_list();
 	if (matching) {
-		while (*matching)
-				printf("%s\n",*matching++);
+		char **mp=matching;
+		while (*mp)
+				printf("%s\n",*mp++);
+		free(matching);
 	}
 	printf("Architecture: '%s'\n",bfd_printable_name(abfd));
 	if (!(bfd_get_file_flags(abfd) & HAS_SYMS)) {
@@ -95,6 +104,10 @@ bfd_vma		addr;
 		} else {
 			fprintf(stderr,"error reading symbol\n");
 		}
+	}
+	if (minisyms) {
+		free(minisyms);
+		minisyms=0;
 	}
 
 	if (!(da=disassembler(abfd))) {
@@ -124,6 +137,9 @@ bfd_vma		addr;
 		addr+=da(addr,&dinf);
 		fprintf(stderr,"\n");
 	}
+#ifdef USE_MDBG
+	printf("Memory leaks found: %i\n",mdbgPrint(0,0));
+#endif
 
 return 0;
 }
