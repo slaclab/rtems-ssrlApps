@@ -67,7 +67,7 @@ endif
 #RTEMS_HOST_ARCH=@sys
 
 ifndef RTEMS_HOST_ARCH
-  RTEMS_HOST_ARCH:=$(shell if [ -x sys ] ; then sys; fi)
+  RTEMS_HOST_ARCH:=$(shell if sys > /dev/null ; then sys; fi)
   ifeq ($(RTEMS_HOST_ARCH)xx,xx)
     ifdef EPICS_HOST_ARCH
     RTEMS_HOST_ARCH:=$(EPICS_HOST_ARCH)
