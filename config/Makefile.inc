@@ -11,12 +11,21 @@ RTEMS_BSP = svgm
 endif
 
 # support 'production' and development environments
+# (RTEMS/tools)
+ifndef RTEMS_WHICH
 RTEMS_WHICH = 4.6
+endif
+
+# support different install locations (prod/devel)
+# (rtemsApplications)
+ifndef RTEMS_SITE_WHICH
+RTEMS_SITE_WHICH = $(RTEMS_WHICH)
+endif
 
 RTEMS_TOP = /afs/slac/package/rtems/$(RTEMS_WHICH)
 
 #Where to install, where to grab local packages
-RTEMS_SITE_DIR = /afs/slac/g/spear/rtemsApplications/$(RTEMS_WHICH)
+RTEMS_SITE_DIR = /afs/slac/g/spear/rtemsApplications/$(RTEMS_SITE_WHICH)
 
 #################################################################
 # There should be no need to change anything below here
@@ -24,12 +33,25 @@ RTEMS_SITE_DIR = /afs/slac/g/spear/rtemsApplications/$(RTEMS_WHICH)
 #for EPICS
 RTEMS_BASE = $(RTEMS_TOP)/tools/@sys
 
+# An ugly hack. In fact, the <top>/make/custom/<bsp>.cfg
+# files need to be patched to define RTEMS_CPU _prior_
+# to including 'default.cfg'. Until that goes into
+# the distribution, we define our default value here
+ifndef RTEMS_CPU
+RTEMS_CPU = powerpc
+endif
+
 #RTEMS 
 prefix = $(RTEMS_TOP)/rtems
 #RTEMS (target specific) libraries
-exec_prefix = $(prefix)/powerpc-rtems
-#Toolchaing
+exec_prefix = $(prefix)/$(RTEMS_CPU)-rtems
+#Toolchain
 tools_prefix = $(RTEMS_BASE)/bin
+
+define make-obj
+	$(make-rel) $(LINK_LIBS)
+#	$(LD) $(AM_LDFLAGS) $(LDFLAGS) -r -o $@ $(OBJS) $(LINK_LIBS)
+endef
 
 # continue with generic/common settings
 
