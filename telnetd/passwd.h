@@ -21,4 +21,5 @@
  */
 
 /* #undef TELNETD_DEFAULT_PASSWD */
-#define TELNETD_DEFAULT_PASSWD "tdH/UvyAt6kUM"
+/* Default password: 'rtems' */
+#define TELNETD_DEFAULT_PASSWD "tduDcyLX12owo"
