@@ -6,7 +6,7 @@
 #
 
 # C source names, if any, go here -- minus the .c
-C_PIECES=stack
+C_PIECES=stack memusage
 C_FILES=$(C_PIECES:%=%.c)
 C_O_FILES=$(C_PIECES:%=${ARCH}/%.o)
 
@@ -56,7 +56,7 @@ CFLAGS   += -O2
 
 #LD_PATHS  += /home/till/slac/cexp/build-ppc-rtems /afs/slac/package/rtems/prod/rtems/powerpc-rtems/lib /home/till/rtems/apps/libtecla/build-ppc-rtems
 #LD_LIBS   += -Wl,--whole-archive -lcexp -lbfd -lregexp -lopcodes -liberty -lrtemscpu -lrtemsbsp  -lc
-LDFLAGS   +=
+LDFLAGS   += 
 #LD_LIBS += -lmisc
 
 tst:

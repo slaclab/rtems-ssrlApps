@@ -17,6 +17,9 @@ extern rtems_monitor_command_entry_t rtems_monitor_commands[];
 int
 taskStack(rtems_id thread_id);
 
+int
+memUsageDump(void);
+
 static void
 fnwrap(int argc, char **argv, unsigned32 arg, boolean verbose)
 {
@@ -40,34 +43,42 @@ if ( argc > 0 ) {
 }
 }
 
+#define NUMBEROF(arr) (sizeof(arr)/sizeof(arr[0]))
+
 static
-rtems_monitor_command_entry_t cpuUsageDumpEntry = {
+rtems_monitor_command_entry_t entries[] = {
+	{
 		"cpuUsageDump",
 		"cpuUsageDump",
 		0,
 		fnwrap,
 		(unsigned32)CPU_usage_Dump,
 		0
-};
-
-static
-rtems_monitor_command_entry_t cpuUsageResetEntry = {
+	},
+	{
 		"cpuUsageReset",
 		"cpuUsageReset",
 		0,
 		fnwrap,
 		(unsigned32)CPU_usage_Reset,
 		0
-};
-
-static
-rtems_monitor_command_entry_t taskStackEntry = {
+	},
+	{
 		"threadStack",
 		"threadStack [taskId]; give stacktrace of a task (0 for self)",
 		1,
 		fnwrap,
 		(unsigned32)taskStack,
 		0
+	},
+	{
+		"memUsageDump",
+		"memUsageDump; show used/free amount of RTEMS workspace and malloc heap",
+		0,
+		fnwrap,
+		(unsigned32)memUsageDump,
+		0
+	},
 };
 
 int
@@ -154,6 +165,7 @@ cleanup:
 class CallUtils {
 public:
 	CallUtils() {
+		unsigned i;
 		if (nest++) return;
 		rtems_semaphore_create( rtems_build_name('c','u','t','m'),
 								1,
@@ -162,12 +174,14 @@ public:
 								RTEMS_NO_PRIORITY_CEILING|RTEMS_LOCAL,
 								0,
 								&monitorMutex);
-		rtems_monitor_insert_cmd(&cpuUsageDumpEntry);
-		rtems_monitor_insert_cmd(&cpuUsageResetEntry);
-		rtems_monitor_insert_cmd(&taskStackEntry);
+		for (i=0; i<NUMBEROF(entries); i++)
+			rtems_monitor_insert_cmd(entries+i);
 	};
 	~CallUtils() {
+		unsigned i;
 		if (--nest) return;
+		for (i=0; i<NUMBEROF(entries); i++)
+			rtems_monitor_erase_cmd(entries+i);
 		rtems_semaphore_delete(monitorMutex);
 	};
 static int nest;
