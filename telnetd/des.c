@@ -4,6 +4,8 @@
  * Copyright (c) 1994 David Burren
  * All rights reserved.
  *
+ * Ported to RTEMS and made reentrant by Till Straumann, 9/2003
+ *
  * Adapted for FreeBSD-2.0 by Geoffrey M. Rehmet
  *	this file should now *only* export crypt(), in order to make
  *	binaries of libcrypt exportable from the USA
