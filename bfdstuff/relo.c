@@ -80,6 +80,19 @@ asymbol			*spb=*(asymbol**)b;
 #define align_size_compare		0
 #endif
 
+static asection *sdatasect = 0;
+
+static void
+s_basic(bfd *abfd, asection *sect, PTR arg)
+{
+	/* TSILL */
+	if (!strcmp(bfd_get_section_name(abfd,sect),".sdata2")) {
+		sdatasect = sect;
+		printf("found an SDATA section\n");
+	}
+}
+
+
 static void
 s_count(bfd *abfd, asection *sect, PTR arg)
 {
@@ -109,6 +122,8 @@ Segment		seg=segOf((LinkData)arg, sect);
 		seg->vmacalc+=bfd_section_size(abfd,sect);
 		sect->output_section = sect;
 	}
+	if (sect && sect == sdatasect)
+		sect->output_section->symbol->value = 32768;
 }
 
 
@@ -232,7 +247,7 @@ printf("TSILL undef (value 0x%08x, flags 0x%08x): %s\n",
 				/* copy name pointer */
 				bfd_asymbol_name(sp) = bfd_asymbol_name(ts);
 				sp->value=ts->value;
-				sp->section=bfd_abs_section_ptr;
+				sp->section=sdatasect ? sdatasect : bfd_abs_section_ptr;
 				sp->flags=BSF_GLOBAL;
 				/* mark the referenced module in the bitmap */
 				assert(modind < MAX_NUM_MODULES);
@@ -422,6 +437,20 @@ typedef struct CexpModuleRec_ {
 } CexpModuleRec, *CexpModule;
 #endif
 
+#ifdef __rtems__
+#define main relo_main
+
+int relo(char *feil)
+{
+char *argv[2]={"relo",0};
+int argc = 1;
+	if (feil)
+		argv[argc++]=feil;
+	return relo_main(argc, argv);
+}
+
+#endif
+
 int
 main(int argc, char **argv)
 {
@@ -457,6 +486,9 @@ printf("TSILL: bfd_log2(1025)=%i\n",bfd_log2(1025));
 		bfd_perror("Checking format");
 		goto cleanup;
 	}
+
+	ldr.errors=0;
+	bfd_map_over_sections(abfd, s_basic, &ldr);
 
 	if (!(ldr.st=slurp_symtab(abfd,depend))) {
 		fprintf(stderr,"Error creating symbol table\n");
@@ -498,6 +530,16 @@ memset(ldr.segs[0].chunk,0xee,ldr.segs[0].size); /*TSILL*/
 			((void (*)(int))bfd_asymbol_value(ldr.st[i]))(0xfeedcafe);
 		}
 	}
+#ifdef __rtems__
+	{
+	extern int cexpDisassemble();
+	extern int cexpDisassemblerInit();
+	char *di = malloc(500);
+	cexpDisassemblerInit(di,stdout);
+	cexpDisassemble(ldr.segs[0].chunk,10,di);
+	free(di);
+	}
+#endif
 
 	rval=0;
 

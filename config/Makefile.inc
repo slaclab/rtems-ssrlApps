@@ -11,14 +11,13 @@ RTEMS_BSP = svgm
 endif
 
 # support 'production' and development environments
-RTEMS_WHICH = prod
+RTEMS_WHICH = 4.6
 
 RTEMS_TOP = /afs/slac/package/rtems/$(RTEMS_WHICH)
 
 #Where to install, where to grab local packages
-RTEMS_SITE_DIR = /afs/slac/g/spear/rtemsApplications/$(RTEMS_WHICH)
-
-RTEMS_MAKEFILE_PATH = /afs/slac/g/spear/rtemsApplications/config
+#RTEMS_SITE_DIR = /afs/slac/g/spear/rtemsApplications/$(RTEMS_WHICH)
+RTEMS_SITE_DIR = /tftpboot
 
 #################################################################
 # There should be no need to change anything below here
