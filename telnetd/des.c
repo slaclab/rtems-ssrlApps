@@ -61,9 +61,12 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <netinet/in.h>
+#ifndef __rtems__
 #include <pwd.h>
 #include <string.h>
 #include <crypt.h>
+#endif
+#include <stdlib.h>
 
 #define REENTRANT
 /* Re-entrantify me -- all this junk needs to be in 
