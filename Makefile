@@ -1,5 +1,5 @@
 #
-#  $Id$
+#  Makefile,v 1.15 2004/11/08 23:02:50 till Exp
 #
 #  Till Straumann <strauman@slac.stanford.edu>, 4/2003
 #
@@ -106,6 +106,7 @@ AUTOCONFSUBDIRS+=cexp
 # libbspExt supported only on our PPC BSPs
 ifneq ($(filter $(RTEMS_BSP_FAMILY),$(PPCBSPS))xx,xx)
 SUBDIRS+=libbspExt
+SUBDIRS+=rtems-gdb-stub
 endif
 
 SUBDIRS+=cexp.$(BUILDEXT)
@@ -179,7 +180,7 @@ install-config: $(RTEMS_SITE_DIR)
 install: $(INSTDIRS) $(BUILDDIRS:%=%/Makefile) install-config
 
 # How to make a tarball of this package
-REVISION=$(filter-out $$%,$$Name$$)
+REVISION=$(filter-out $$%,$SSRL_RTEMS_20041202$)
 tar:
 	@$(make-tar)
 
