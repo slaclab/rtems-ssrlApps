@@ -16,11 +16,15 @@ SUBDIRS+=libbspExt
 SUBDIRS+=cexp.build
 
 # these depend on cexp and/or tecla
+ifeq ($(RTEMS_BSP),"svgm")
 SUBDIRS+=svgmWatchdog
+endif
 SUBDIRS+=monitor
 SUBDIRS+=telnetd
 SUBDIRS+=system
+ifeq ($(RTEMS_BSP),"svgm")
 SUBDIRS+=netboot
+endif
 
 INSTSUBDIRS+=/bin
 INSTSUBDIRS+=/include
@@ -70,7 +74,3 @@ CLOBBER_ADDITIONS+=$(BUILDDIRS) $(RTEMS_SITE_INSTALLDIR)
 
 $(INSTDIRS):
 	$(MKDIR) -p $@
-	
-blah:  $(INSTDIRS)
-	echo $(INSTDIRS)
-
