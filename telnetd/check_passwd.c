@@ -7,7 +7,7 @@
 
 /* Author: Till Straumann <strauman@slac.stanford.edu>, 2003 */
 
-#if !defined(INSIDE_TELNETD)
+#if !defined(INSIDE_TELNETD) && !defined(__rtems__)
 #include <crypt.h>
 #endif
 #include <termios.h>
@@ -18,11 +18,13 @@
 #include <string.h>
 #include <syslog.h>
 
+#include "passwd.h"
+
 /* rtems has global filedescriptors but per-thread stdio streams... */
 #define STDI_FD fileno(stdin)
 #define MAXPASSRETRY	3
 
-extern char *__des_crypt_r(char *, char*, char*);
+extern char *__des_crypt_r(char *, char*, char*, int);
 
 #if !defined(INSIDE_TELNETD)
 #define sockpeername(s,b,sz) (-1)
@@ -41,7 +43,11 @@ char			buf[30], cryptbuf[21];
 char			salt[3];
 
 	if ( !(pw=getenv("TELNETD_PASSWD")) || 0 == strlen(pw) )
+#ifdef TELNETD_DEFAULT_PASSWD
+		pw = TELNETD_DEFAULT_PASSWD;
+#else
 		return 0;
+#endif
 
 	if ( tcgetattr(STDI_FD, &t) ) {
 		perror("check_passwd(): tcgetattr");
@@ -84,15 +90,16 @@ char			salt[3];
 				fgetc(stdin);
 			goto done;
 		}
+		fputc('\n',stderr);
 		tmp = strlen(buf);
 		while ( tmp > 0 && ('\n' == buf[tmp-1] || '\r' == buf[tmp-1]) ) {
 			buf[--tmp]=0;
 		}
-		if ( !strcmp(__des_crypt_r(buf, salt, cryptbuf), pw) ) {
+		if ( !strcmp(__des_crypt_r(buf, salt, cryptbuf, sizeof(cryptbuf)), pw) ) {
 			rval = 0;
 			break;
 		}
-		fprintf(stderr,"\nIncorrect Password.\n");
+		fprintf(stderr,"Incorrect Password.\n");
 		sleep(2);
 	}
 
@@ -114,7 +121,7 @@ done:
 	return rval;
 }
 
-#if !defined(INSIDE_TELNETD)
+#if !defined(INSIDE_TELNETD) && !defined(__rtems__)
 int
 main(int argc, char **argv)
 {
