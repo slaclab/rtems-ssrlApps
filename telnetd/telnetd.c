@@ -21,7 +21,7 @@
  * Till Straumann <strauman@slac.stanford.edu>
  *  - made the 'shell' interface more generic, i.e. it is now
  *    possible to have 'telnetd' run an arbitrary 'shell'
- *    program. The default, however, is CEXP.
+ *    program.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -43,14 +43,14 @@
 #include <string.h>
 #include <syslog.h>
 
-#include <cexp.h>
 #include <rtems/userenv.h>
 #include <rtems/error.h>
 
 #define PARANOIA
 
 extern char *telnet_get_pty(int socket);
-extern int   telnet_pty_inited;
+extern int   telnet_pty_initialize();
+extern int   telnet_pty_finalize();
 
 struct shell_args {
 	char	*devname;
@@ -58,7 +58,6 @@ struct shell_args {
 	char	peername[16];
 };
 
-static void cexpWrap(char *dev, void *arg);
 static int sockpeername(int sock, char *buf, int bufsz);
 
 /***********************************************************/
@@ -66,16 +65,8 @@ rtems_id            telnetd_task_id      =0;
 rtems_unsigned32    telnetd_stack_size   =32000;
 rtems_task_priority telnetd_task_priority=100;
 int					telnetd_dont_spawn   =0;
-void				(*telnetd_shell)(char *, void*)=cexpWrap;
+void				(*telnetd_shell)(char *, void*)=0;
 void				*telnetd_shell_arg	 =0;
-
-static void
-cexpWrap(char *dev, void *arg)
-{
-char	*args[]={"Cexp-telnet",0};
-	fprintf(stderr,"[Telnet:] starting cexp on %s\n",dev);
-	cexp_main(1,args);
-}
 
 static char *grab_a_Connection(int des_socket, struct sockaddr_in *srv, char *peername, int sz)
 {
@@ -260,11 +251,6 @@ struct shell_args	*arg;
 static int rtems_initialize_telnetd(void) {
 	rtems_status_code sc;
 	
-#if 0
-	void register_icmds(void);
-	register_icmds(); /* stats for tcp/ip */
-#endif
-	
 	if (telnetd_task_id         ) return RTEMS_RESOURCE_IN_USE;
 	if (telnetd_stack_size<=0   ) telnetd_stack_size   =32000;
 	if (telnetd_task_priority<=2) telnetd_task_priority=100;
@@ -294,13 +280,18 @@ int startTelnetd(void (*cmd)(char *, void *), void *arg, int dontSpawn, int stac
 	printf("$Id$\n");
 	printf("Release $Name$\n");
 
+	if ( !telnetd_shell && !cmd ) {
+		fprintf(stderr,"startTelnetd(): setup error - NO SHELL; bailing out\n");
+		return 1;
+	}
+
 	if (telnetd_task_id) {
 		fprintf(stderr,"ERROR:telnetd already started\n");
 		return 1;
 	};
 
-	if ( !telnet_pty_inited ) {
-		fprintf(stderr,"PTY driver probably not registered\n");
+	if ( !telnet_pty_initialize() ) {
+		fprintf(stderr,"PTY driver probably not properly registered\n");
 		return 1;
 	}
 
@@ -317,14 +308,6 @@ int startTelnetd(void (*cmd)(char *, void *), void *arg, int dontSpawn, int stac
                         telnetd_stack_size,telnetd_task_priority);
 	return 0;
 }
-/***********************************************************/
-#if 0
-int register_telnetd(void) {
-	shell_add_cmd("telnetd","telnet","telnetd [stacksize [tsk_priority]]",main_telnetd);
-	return 0;
-}
-#endif
-/***********************************************************/
 
 /* utility wrapper */
 static rtems_task
@@ -332,7 +315,8 @@ spawned_shell(rtems_task_argument targ)
 {
 rtems_status_code	sc;
 FILE				*std[3]={0};
-int					i;
+FILE				*ostd[3]={ stdin, stdout, stderr };
+int					i=0;
 struct shell_args	*arg = (struct shell_args *)targ;
 
 	sc=rtems_libio_set_private_env();
@@ -349,6 +333,7 @@ struct shell_args	*arg = (struct shell_args *)targ;
 			goto cleanup;
 		}
 	}
+
 	stdin  = std[0];
 	stdout = std[1];
 	stderr = std[2];
@@ -357,8 +342,12 @@ struct shell_args	*arg = (struct shell_args *)targ;
 	if ( 0 == check_passwd(arg->peername) )
 		telnetd_shell(arg->devname, arg->arg);
 
+	stdin  = ostd[0];
+	stdout = ostd[1];
+	stderr = ostd[2];
+
 cleanup:
-	release_a_Connection(arg->devname, arg->peername, std, 3);
+	release_a_Connection(arg->devname, arg->peername, std, i);
 	free(arg);
 	rtems_task_delete(RTEMS_SELF);
 }

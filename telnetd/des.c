@@ -279,7 +279,9 @@ des_init(void)
 	if (des_initialised==1)
 	    return;
 
+#ifndef REENTRANT
 	des_ctx_init();
+#endif
 
 	bits24 = (bits28 = bits32 + 4) + 4;
 

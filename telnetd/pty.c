@@ -104,7 +104,7 @@ int		printk(char*,...);
 #endif
 
 
-int    telnet_pty_inited=FALSE;
+static int   telnet_pty_inited=FALSE;
 static pty_t telnet_ptys[MAX_PTYS];
 
 static rtems_device_major_number pty_major;
@@ -395,22 +395,6 @@ ptyPollRead(int minor) {
 	return -1;
 }
 /*-----------------------------------------------------------*/
-static const rtems_termios_callbacks pty_poll_callbacks = {
-	ptyPollInitialize,	/* FirstOpen*/
-	ptyShutdown,		/* LastClose*/
-	ptyPollRead,		/* PollRead  */
-	ptyPollWrite,		/* Write */
-	ptySetAttributes,	/* setAttributes */
-	NULL,			/* stopRemoteTX */
-	NULL,			/* StartRemoteTX */
-	0 			/* outputUsesInterrupts */
-};
-/*-----------------------------------------------------------*/
-static const rtems_termios_callbacks * pty_get_termios_handlers(int polled) {
-	return &pty_poll_callbacks;
-}
-/*-----------------------------------------------------------*/
-/*-----------------------------------------------------------*/
 /*  pty_initialize
  *
  *  This routine initializes the pty IO driver.
@@ -464,9 +448,7 @@ rtems_status_code status ;
 	return RTEMS_SUCCESSFUL;
 }
 
-static int pty_finalize(
-	rtems_device_major_number major
-)
+static int pty_do_finalize()
 {
 int ndx;
 rtems_status_code status;
@@ -480,7 +462,7 @@ rtems_status_code status;
 					return -1;
 			}
 		}
-		if (RTEMS_SUCCESSFUL != rtems_io_unregister_driver(major)) {
+		if (RTEMS_SUCCESSFUL != rtems_io_unregister_driver(pty_major)) {
 				fprintf(stderr,"Unable to remove this driver\n");
 				return -1;
 		}
@@ -619,12 +601,32 @@ static rtems_driver_address_table drvPty = {
 		pty_control
 };
 
-static void pty_do_initialize()
+/*-----------------------------------------------------------*/
+static const rtems_termios_callbacks pty_poll_callbacks = {
+	ptyPollInitialize,	/* FirstOpen*/
+	ptyShutdown,		/* LastClose*/
+	ptyPollRead,		/* PollRead  */
+	ptyPollWrite,		/* Write */
+	ptySetAttributes,	/* setAttributes */
+	NULL,			/* stopRemoteTX */
+	NULL,			/* StartRemoteTX */
+	0 			/* outputUsesInterrupts */
+};
+/*-----------------------------------------------------------*/
+static const rtems_termios_callbacks * pty_get_termios_handlers(int polled) {
+	return &pty_poll_callbacks;
+}
+/*-----------------------------------------------------------*/
+
+static int pty_do_initialize()
 {
-	if (RTEMS_SUCCESSFUL==rtems_io_register_driver(0, &drvPty, &pty_major))
-		telnet_pty_inited=TRUE;
-	else
-		fprintf(stderr,"WARNING: registering the PTY driver FAILED\n");
+	if ( !telnet_pty_inited ) {
+		if (RTEMS_SUCCESSFUL==rtems_io_register_driver(0, &drvPty, &pty_major))
+			telnet_pty_inited=TRUE;
+		else
+			fprintf(stderr,"WARNING: registering the PTY driver FAILED\n");
+	}
+	return telnet_pty_inited;
 }
 
 #ifdef __cplusplus
@@ -636,28 +638,34 @@ public:
 				}
 			 };
 	~TelnetPtyIni(){ if (!--nest) {
-						pty_finalize(major);
+						pty_do_finalize();
 				}
 			 };
 private:
-	rtems_device_major_number major;
 static int nest;
 };
 
 static TelnetPtyIni onlyInst;
 int TelnetPtyIni::nest=0;
 
+int telnet_pty_initialize()
+{
+	return telnet_pty_inited;
+}
+
+int telnet_pty_finalize()
+{
+	return telnet_pty_inited;
+}
 };
+#else
+int telnet_pty_initialize()
+{
+	return pty_do_initialize();
+}
+
+int telnet_pty_finalize()
+{
+	return pty_do_finalize();
+}
 #endif
-
-void
-_cexpModuleInitialize(void* unused)
-{
-	pty_do_initialize();
-}
-
-int
-_cexpModuleFinalize(void *unused)
-{
-	return pty_finalize(pty_major);
-}
