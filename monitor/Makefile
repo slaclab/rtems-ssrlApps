@@ -57,7 +57,7 @@ CFLAGS   += -O2
 #LD_PATHS  += /home/till/slac/cexp/build-ppc-rtems /afs/slac/package/rtems/prod/rtems/powerpc-rtems/lib /home/till/rtems/apps/libtecla/build-ppc-rtems
 #LD_LIBS   += -Wl,--whole-archive -lcexp -lbfd -lregexp -lopcodes -liberty -lrtemscpu -lrtemsbsp  -lc
 LDFLAGS   +=
-LD_LIBS += -lmisc
+#LD_LIBS += -lmisc
 
 tst:
 	echo $(LINK.c)
