@@ -164,7 +164,8 @@ struct shell_args	*arg;
 		telnetd_task_id=0;
 		rtems_task_delete(RTEMS_SELF);
 	};
-	setsockopt(des_socket,SOL_SOCKET,0,&i,sizeof(i));
+	setsockopt(des_socket,SOL_SOCKET,SO_KEEPALIVE,&i,sizeof(i));
+
 	memset(&srv,0,sizeof(srv));
 	srv.sin_family=AF_INET;
 	srv.sin_port=htons(23);
