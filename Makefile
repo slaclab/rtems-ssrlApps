@@ -129,9 +129,6 @@ endif
 INSTSUBDIRS+=/bin
 INSTSUBDIRS+=/include
 INSTSUBDIRS+=/lib
-INSTSUBDIRS+=/$(RTEMS_BSP)/bin
-INSTSUBDIRS+=/$(RTEMS_BSP)/lib
-INSTSUBDIRS+=/$(RTEMS_BSP)/img
 
 INSTDIRS = $(addprefix $(RTEMS_SITE_INSTALLDIR),$(INSTSUBDIRS))
 
@@ -188,13 +185,21 @@ tar:
 
 CLOBBER_ADDITIONS+=$(BUILDDIRS)
 
+ifndef RTEMS_SITE_DOCDIR
+RTEMS_SITE_DOCDIR=$(RTEMS_SITE_DIR)
+endif
+
 ifndef RTEMS_SITE_MANDIR
-RTEMS_SITE_MANDIR=$(RTEMS_SITE_DIR)/man
+RTEMS_SITE_MANDIR=$(RTEMS_SITE_DOCDIR)/man
+endif
+
+ifndef RTEMS_SITE_INFODIR
+RTEMS_SITE_INFODIR=$(RTEMS_SITE_DOCDIR)/info
 endif
 
 %.$(BUILDEXT)/Makefile:
 	test -d $(dir $@) || $(MKDIR) $(dir $@)
-	cd	$(dir $@) ; ../$(@:%.$(BUILDEXT)/Makefile=%)/configure --build=`../$(@:%.$(BUILDEXT)/Makefile=%)/config.guess` --host=$(RTEMS_CPU)-rtems --disable-nls --prefix=$(RTEMS_SITE_INSTALLDIR) --mandir=$(RTEMS_SITE_MANDIR) --with-newlib CC=$(word 1,$(CC)) CFLAGS="$(CPU_CFLAGS) $(CFLAGS)" CXXFLAGS="$(CPU_CFLAGS) $(CXXFLAGS)" --enable-multilib=no
+	cd	$(dir $@) ; ../$(@:%.$(BUILDEXT)/Makefile=%)/configure --build=`../$(@:%.$(BUILDEXT)/Makefile=%)/config.guess` --host=$(RTEMS_CPU)-rtems --disable-nls --prefix=$(RTEMS_SITE_INSTALLDIR) --mandir=$(RTEMS_SITE_MANDIR) --infodir=$(RTEMS_SITE_INFODIR) --with-newlib CC=$(word 1,$(CC)) CFLAGS="$(CPU_CFLAGS) $(CFLAGS)" CXXFLAGS="$(CPU_CFLAGS) $(CXXFLAGS)" --enable-multilib=no
 
 $(INSTDIRS) $(RTEMS_SITE_DIR):
 	$(MKDIR) -p $@

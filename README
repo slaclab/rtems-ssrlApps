@@ -71,12 +71,15 @@ sources.
 
 2. Tune config/Makefile.inc
 ===========================
-Mainly, there are three variables of interest in Makefile.inc
+Mainly, there are a few variables of interest in Makefile.inc
 
  - RTEMS_BSP defines the BSP to use.
 
- - RTEMS_TOP defines the place where RTEMS and the toolchain
-   are installed.
+ - RTEMS_TOP points to the place where RTEMS is installed.
+   You should find the 'make' and '<cpu>-rtems' directories
+   underneath RTEMS_TOP.
+
+ - RTEMS_BASE points to the toolchain installation directory.
    Note that every version of RTEMS comes with its own version
    of the tools and especially: the C library. (There are
    subtle dependencies between the compiler, the C library
@@ -87,8 +90,11 @@ Mainly, there are three variables of interest in Makefile.inc
    The SSRL tailored RTEMS/Makefiles use absolute pathnames
    to access tools to avoid problems due to version mismatches.
 
-   RTEMS_TOP is and should be the ONLY object pointing to a
+   RTEMS_BASE is and should be the ONLY object pointing to a
    particular RTEMS/toolchain version.
+ 
+   The name 'RTEMS_BASE' is somewhat unfortunate but since EPICS
+   uses it, we inherit it...
 
  - RTEMS_SITE_DIR defines a path under which the rtemsApplications
    will be installed. Also, 'include' and 'lib' directories
@@ -99,7 +105,7 @@ Mainly, there are three variables of interest in Makefile.inc
    with an independent copy.
 
    Make sure RTEMS_SITE_DIR is always set - some packages might
-   install into the RTEMS_TOP are otherwise; an area which should
+   install into the RTEMS_TOP area otherwise; a place which should
    not be cluttered. 
 
  - Note that the EPICS makefiles include 'config/Makefile.inc'
