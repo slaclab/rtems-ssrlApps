@@ -114,7 +114,7 @@ char	*line,*buf=0;
 			goto cleanup;
 		}
 
-		assert(rtems_monitor_make_argv(buf,&argc,argv) < sizeof(argv)/sizeof(argv[0]));
+		assert(rtems_monitor_make_argv(buf,&argc,argv) < (int)(sizeof(argv)/sizeof(argv[0])));
 
 		/* catch exit/quit which call the fatal error handler */
 		if (!strcmp("exit",argv[0]) ||
