@@ -33,7 +33,7 @@ from scratch, the following steps are necessary:
   - gmake install
 
   - to cleanup, it may be necessary to manually remove the
-    xxx.build directories.
+    xxx-build directories (normally done by 'gmake distclean').
   - use 'gmake distclean' to remove built (but not the installed)
     stuff.
 
