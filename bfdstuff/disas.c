@@ -128,7 +128,6 @@ bfd_vma		addr;
 		fprintf(stderr,"UNKNOWN ENDIANNESS\n");
 		return 1;
 	}
-	bfd_close_all_done(abfd);
 	len=10;
 	addr=dinf.buffer_vma;
 	while(len--) {
@@ -137,6 +136,7 @@ bfd_vma		addr;
 		addr+=da(addr,&dinf);
 		fprintf(stderr,"\n");
 	}
+	bfd_close_all_done(abfd);
 #ifdef USE_MDBG
 	printf("Memory leaks found: %i\n",mdbgPrint(0,0));
 #endif

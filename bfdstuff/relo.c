@@ -7,13 +7,17 @@
 #include <mdbg.h>
 #endif
 
+#ifdef USE_ELF_STUFF
+#include "elf-bfd.h"
+#endif
+
 #define CACHE_LINE_SIZE 32
 
 /* an output segment description */
 typedef struct SegmentRec_ {
 	PTR				chunk;		/* pointer to memory */
 	unsigned long	vmacalc;	/* working counter */
-	unsigned long	size;		/* initial 'size' of the segment is its aligment */
+	unsigned long	size;
 	unsigned		attributes; /* such as 'read-only' etc.; currently unused */
 } SegmentRec, *Segment;
 
@@ -22,8 +26,10 @@ typedef struct SegmentRec_ {
 typedef struct LinkDataRec_ {
 	SegmentRec		segs[NUM_SEGS];
 	asymbol			**st;
-	asection		*tsill;
+	asection		*csect;		/* new common symbols' section */
 	int				errors;
+	unsigned long	nSyms;		/* number of symbols defined by the loaded file */
+	unsigned long	nSymChars;	/* size we need for the string table */
 } LinkDataRec, *LinkData;
 
 /* how to decide where a particular section should go */
@@ -34,18 +40,36 @@ segOf(LinkData ld, asection *sect)
 	return &ld->segs[0];
 }
 
+/* determine the alignment power of a common symbol
+ * (currently only works for ELF)
+ */
+#ifdef USE_ELF_STUFF
+static __inline__ int
+get_align_pwr(bfd *abfd, asymbol *sp)
+{
+register unsigned long rval=0,tst;
+elf_symbol_type *esp;
+	if (esp=elf_symbol_from(abfd, sp))
+		for (tst=1; tst<esp->internal_elf_sym.st_size; rval++)
+			tst<<=1;
+	return rval;
+}
+#else
+#define get_align_pwr(abfd,sp) (0)
+#endif
+
 static void
 s_count(bfd *abfd, asection *sect, PTR arg)
 {
 Segment		seg=segOf((LinkData)arg, sect);
 	printf("Section %s, flags 0x%08x\n",
-			sect->name, sect->flags);
+			bfd_get_section_name(abfd,sect), sect->flags);
 	printf("size: %i, alignment %i\n",
 			bfd_section_size(abfd,sect),
 			(1<<bfd_section_alignment(abfd,sect)));
 	if (SEC_ALLOC & sect->flags) {
-		seg->size=align_power(seg->size, bfd_get_section_alignment(abfd,sect));
 		seg->size+=bfd_section_size(abfd,sect);
+		seg->size+=(1<<bfd_get_section_alignment(abfd,sect));
 	}
 }
 
@@ -137,9 +161,11 @@ char		buf[1000];
 static asymbol **
 slurp_symtab(bfd *abfd, LinkData ld)
 {
-asymbol **rval=0,*sp;
-int		i,errs=0;
-long	ss;
+asymbol 		**rval=0,*sp;
+int				i,errs=0;
+long			ss;
+unsigned long	csect_size=0;
+unsigned		num_new_commons=0;
 
 	if (!(HAS_SYMS & bfd_get_file_flags(abfd))) {
 		fprintf(stderr,"No symbols found\n");
@@ -157,11 +183,13 @@ long	ss;
 		free(rval);
 		return 0;
 	}
+
 	/* resolve undefined and common symbols;
 	 * find name clashes
 	 */
 	for (i=0; sp=rval[i]; i++) {
 		asection *sect=bfd_get_section(sp);
+		TstSym		ts;
 
 		/* we only care about global symbols
 		 * (NOTE: undefined symbols are neither local
@@ -170,29 +198,108 @@ long	ss;
 		if ( (BSF_LOCAL & sp->flags) )
 			continue;
 
-		if (bfd_is_und_section(sect)) {
+		ts=tstSymLookup(bfd_asymbol_name(sp));
 
-			TstSym ts=tstSymLookup(sp->name);
+		if (bfd_is_und_section(sect)) {
 
 			if (ts) {
 				sp=rval[i]=bfd_make_empty_symbol(abfd);
-				sp->name=ts->name;
+				bfd_asymbol_name(sp) = bfd_asymbol_name(ts);
 				sp->value=ts->value;
 				sp->section=bfd_abs_section_ptr;
 				sp->flags=BSF_GLOBAL;
 			} else {
-				fprintf(stderr,"Unresolved symbol: %s\n",sp->name);
+				fprintf(stderr,"Unresolved symbol: %s\n",bfd_asymbol_name(sp));
 				errs++;
 			}
 		}
 		else if (bfd_is_com_section(sp)) {
-			;
+			if (ts) {
+				/* use existing value */
+				sp = bfd_make_empty_symbol(abfd);
+				/* TODO: check size and alignment */
+				/* copy pointer to old name */
+				bfd_asymbol_name(sp) = bfd_asymbol_name(rval[i]);
+				sp->value=ts->value;
+				sp->section=bfd_abs_section_ptr;
+				sp->flags=BSF_GLOBAL;
+			} else {
+				/* it's the first definition of this common symbol */
+				asymbol *swap;
+
+				/* we'll have to add it to our internal symbol table */
+				ld->nSyms++;
+				ld->nSymChars+=strlen(bfd_asymbol_name(sp))+1;
+				sp->flags |= BSF_KEEP;
+
+				/* increase section size */
+				csect_size += bfd_asymbol_value(sp);
+
+				/* this is a new common symbol; we move all of these
+				 * to the beginning of the 'st' list
+				 */
+				swap=rval[num_new_commons];
+				rval[num_new_commons++]=sp;
+				sp=swap;
+			}
+			rval[i]=sp; /* use new instance */
+		} else {
+			if (ts) {
+				fprintf(stderr,"Symbol '%s' already exists\n",bfd_asymbol_name(sp));
+
+				errs++;
+				/* TODO: check size and alignment; allow multiple
+				 *       definitions???
+				 */
+			} else {
+				/* new symbol defined by the loaded object; account for it */
+				ld->nSyms++;
+				ld->nSymChars+=strlen(bfd_asymbol_name(sp))+1;
+				/* mark for second pass */
+				sp->flags |= BSF_KEEP;
+			}
 		}
+	}
+
+	/* TODO
+		sort st[0]..st[num_new_commons-1] by alignment
+		 * (MUST be powers of two)
+	 */
+
+	/* TODO buildCexpSymtab(); */
+
+	if (num_new_commons) {
+		unsigned long tmp,val;
+
+		/* our common section alignment is the maximal alignment
+		 * found during the sorting process which is the alignment
+		 * of the first element...
+		 */
+		bfd_section_alignment(abfd,ld->csect) = get_align_pwr(abfd,rval[0]);
+
+		/* set new common symbol values */
+		for (val=0,i=0; i<num_new_commons; i++) {
+			asymbol *sp;
+
+			sp = bfd_make_empty_symbol(abfd);
+
+			val=align_power(val,get_align_pwr(abfd,rval[i]));
+			/* copy pointer to old name */
+			bfd_asymbol_name(sp) = bfd_asymbol_name(rval[i]);
+			sp->value=val;
+			sp->section=ld->csect;
+			sp->flags=rval[i]->flags;
+			val+=rval[i]->value;
+			rval[i] = sp;
+		}
+		
+		bfd_set_section_size(abfd, ld->csect, csect_size);
 	}
 
 	if (errs) {
 		/* release resources */
 		free(rval);
+		/* TODO destroyCexpSymtab(); */
 		return 0;
 	}
 	return rval;
@@ -228,45 +335,36 @@ TstSym			sm;
 		fprintf(stderr,"Need filename arg\n");
 		goto cleanup;
 	}
+printf("TSILL: bfd_log2(1025)=%i\n",bfd_log2(1025));
 
 	bfd_init();
 #ifdef USE_MDBG
 	mdbgInit();
 #endif
 	if ( ! (abfd=bfd_openr(argv[1],0)) ) {
-		fprintf(stderr,"Unable to open '%s'\n",argv[1]);
+		bfd_perror("Opening object file");
 		goto cleanup;
 	}
 	if (!bfd_check_format(abfd, bfd_object)) {
-		fprintf(stderr,"Invalid format\n");
+		bfd_perror("Checking format");
 		goto cleanup;
 	}
+
+	/* make a dummy section for new common symbols */
+	ldr.csect=bfd_make_section(abfd,bfd_get_unique_section_name(abfd,".dummy",0));
+	if (!ldr.csect) {
+		bfd_perror("Creating dummy section");
+		goto cleanup;
+	}
+	ldr.csect->flags |= SEC_ALLOC;
 
 	if (!(ldr.st=slurp_symtab(abfd,&ldr))) {
-		fprintf(stderr,"Error reading symbol table\n");
+		fprintf(stderr,"Error creating symbol table\n");
 		goto cleanup;
 	}
-
-	/* set aligment for our segments; we just have to make sure
-	 * the initial aligment is worse than what 'malloc()' gives us.
-	 */
-	for (i=0; i<NUM_SEGS; i++)
-		ldr.segs[i].size=1; /* first section in this segment will align this */
 
 	ldr.errors=0;
 	bfd_map_over_sections(abfd, s_count, &ldr);
-	ldr.tsill=bfd_make_section_old_way(abfd,".tsillsym");
-	ldr.tsill->output_section=ldr.tsill;
-
-	for (sm=tstTab; sm->name; sm++) {
-		asymbol			*s;
-		s=bfd_make_empty_symbol(abfd);
-		s->name=sm->name;
-		s->value=sm->value;
-		s->section=ldr.tsill;
-		s->flags=BSF_GLOBAL;
-	}
-
 
 	/* allocate segment space */
 	for (i=0; i<NUM_SEGS; i++)
@@ -279,7 +377,11 @@ TstSym			sm;
 memset(ldr.segs[0].chunk,0xee,ldr.segs[0].size); /*TSILL*/
 	bfd_map_over_sections(abfd, s_reloc, &ldr);
 
+	/* TODO: setCexpSymtabValues() */
+
 	flushCache(&ldr);
+
+	/* TODO: call constructors */
 
 	for (i=0; ldr.st[i]; i++) {
 		if (0==strcmp(bfd_asymbol_name(ldr.st[i]),"blah")) {
@@ -288,6 +390,7 @@ memset(ldr.segs[0].chunk,0xee,ldr.segs[0].size); /*TSILL*/
 		}
 	}
 	rval=0;
+
 cleanup:
 	if (ldr.st) free(ldr.st);
 	if (abfd) bfd_close_all_done(abfd);
