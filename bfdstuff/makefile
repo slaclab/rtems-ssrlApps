@@ -2,10 +2,10 @@
 # However, different versions of libopcodes don't grok different versions'
 # header :-(. Therefore, we must provide a consistent set of library / header
 # paths...
-BINUTILS=/home/till/gnu/binutils-2.11.1
+BINUTILS=/home/till/binutils-2.11.1
 ARCH=build-i386-linux
 DEBUG=DEBUG
-MDBG=/home/till/slac/xfm/src/mdbg/mdbg.o
+#MDBG=/home/till/slac/xfm/src/mdbg/mdbg.o
 CC=gcc
 
 
