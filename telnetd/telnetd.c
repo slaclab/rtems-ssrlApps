@@ -126,7 +126,8 @@ rtems_status_code	sc;
 			  close(acp_socket);
 #else
 			  if (telnetd_dont_spawn) {
-					telnetd_shell(devname, telnetd_shell_arg);
+					if ( 0 == check_passwd() )
+						telnetd_shell(devname, telnetd_shell_arg);
 			  } else if ((sc=rtems_task_create(
 						rtems_build_name(
 								devname[5],
@@ -252,7 +253,8 @@ char				*devname=(char*)arg;
 	stderr = std[2];
 
 	/* call their routine */
-	telnetd_shell(devname, telnetd_shell_arg);
+	if ( 0 == check_passwd() )
+		telnetd_shell(devname, telnetd_shell_arg);
 
 cleanup:
 	for (i=0; i<3; i++) {
