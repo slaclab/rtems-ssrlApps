@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include "tab.h"
 
+#ifdef USE_MDBG
+#include <mdbg.h>
+#endif
+
 typedef struct LinkDataRec_ {
 	 void		*chunk;
 	 asymbol	**st;
@@ -60,6 +64,7 @@ char		buf[1000];
 		sz=bfd_canonicalize_reloc(abfd,sect,cr,ld->st);
 		if (sz<=0) {
 			fprintf(stderr,"ERROR: unable to canonicalize relocs\n");
+			free(cr);
 			return;
 		}
 		bfd_get_section_contents(abfd,sect,bfd_get_section_vma(abfd,sect),0,bfd_section_size(abfd,sect));
@@ -85,6 +90,7 @@ char		buf[1000];
 				fprintf(stderr,"Relocation failed (err %i)\n",err);
 			}
 		}
+		free(cr);
 	}
 }
 
@@ -145,6 +151,9 @@ TstSym			sm;
 		goto cleanup;
 	}
 	bfd_init();
+#ifdef USE_MDBG
+	mdbgInit();
+#endif
 	abfd=bfd_openr(argv[1],0);
 	if (!bfd_check_format(abfd, bfd_object)) {
 		fprintf(stderr,"Invalid format\n");
@@ -176,5 +185,9 @@ TstSym			sm;
 cleanup:
 	if (ldr.st) free(ldr.st);
 	if (abfd) bfd_close_all_done(abfd);
+	if (ldr.chunk) free(ldr.chunk);
+#ifdef USE_MDBG
+	printf("Memory leaks found: %i\n",mdbgPrint(0,0));
+#endif
 	return rval;
 }
