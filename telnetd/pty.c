@@ -7,6 +7,16 @@
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ *  Till Straumann <strauman@slac.stanford.edu>
+ *
+ *   - converted into a loadable module
+ *   - NAWS support / ioctls for querying/setting the window
+ *     size added.
+ *   - don't delete the running task when the connection
+ *     is closed. Rather let 'read()' return a 0 count so
+ *     they may cleanup. Some magic hack works around termios
+ *     limitation.
  * 
  *  $Id$
  */
@@ -14,6 +24,11 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#define DEBUG_WH		(1<<0)
+#define DEBUG_DETAIL	(1<<1)
+
+/* #define DEBUG DEBUG_WH */
 
 #ifdef __cplusplus
 extern "C" {
@@ -132,6 +147,12 @@ handleSB(pty_t *pty)
 		case 31:	/* NAWS */
 			pty->width  = (pty->sb_buf[1]<<8) + pty->sb_buf[2];
 			pty->height = (pty->sb_buf[3]<<8) + pty->sb_buf[4];
+#if DEBUG & DEBUG_WH
+			fprintf(stderr,
+					"Setting width/height to %ix%i\n",
+					pty->width,
+					pty->height);
+#endif
 			break;
 		default:
 			break;
@@ -174,7 +195,7 @@ int read_pty(int minor) { /* Characters writed in the client side*/
 									 pty->iac_mode=value;
 									 return -1;
 							 case IAC_SB  :
-#ifdef DEBUG
+#if DEBUG & DEBUG_DETAIL
 									 printk("SB\n");
 #endif
 									 pty->iac_mode=value;
@@ -202,7 +223,7 @@ int read_pty(int minor) { /* Characters writed in the client side*/
 							 case IAC_NOP :
 									 return -1;
 							 case IAC_SE  :
-#ifdef DEBUG
+#if DEBUG & DEBUG_DETAIL
 									{
 									int i;
 									printk("SE");
@@ -236,7 +257,7 @@ int read_pty(int minor) { /* Characters writed in the client side*/
 							 send_iac(minor,IAC_DO  ,    1);	/*ECHO    */
 					 } else if (value==31) {
 							 send_iac(minor,IAC_DO  ,   31);	/*NAWS	  */
-#ifdef DEBUG
+#if DEBUG & DEBUG_DETAIL
 							 printk("replied DO NAWS\n");
 #endif
 					 } else {
@@ -535,10 +556,22 @@ pty_t					 *p=&ptys[minor];
 			wp->ws_row = p->height;
 			wp->ws_col = p->width;
 			args->ioctl_return=0;
+#if DEBUG & DEBUG_WH
+			fprintf(stderr,
+					"ioctl(TIOCGWINSZ), returning %ix%i\n",
+					wp->ws_col,
+					wp->ws_row);
+#endif
 
 			return RTEMS_SUCCESSFUL;
 
 		case TIOCSWINSZ:
+#if DEBUG & DEBUG_WH
+			fprintf(stderr,
+					"ioctl(TIOCGWINSZ), setting %ix%i\n",
+					wp->ws_col,
+					wp->ws_row);
+#endif
 
 			p->height = wp->ws_row;
 			p->width  = wp->ws_col;

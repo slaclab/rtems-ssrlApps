@@ -44,7 +44,7 @@ include $(RTEMS_ROOT)/make/leaf.cfg
 
 DEFINES  +=
 
-CPPFLAGS += -I. -I$(exec_prefix)/include
+CPPFLAGS += -I.
 CFLAGS   +=
 
 #
@@ -78,4 +78,4 @@ $(filter %.exe, $(PGMS)): ${OBJS} ${LINK_FILES}
 # Install the program(s), appending _g or _p as appropriate.
 # for include files, just use $(INSTALL_CHANGE)
 install:  all
-	$(INSTALL_VARIANT) -m 555 ${PGMS} ${PROJECT_RELEASE}/bin
+	$(INSTALL_VARIANT) -m 555 ${PGMS} ${INSTALLDIR}/bin

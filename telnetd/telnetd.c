@@ -17,6 +17,11 @@
  * this daemon interactively. (Login in /dev/console of course)
  * 
  * Sorry but OOB is not still implemented. (This is the first version)
+ *
+ * Till Straumann <strauman@slac.stanford.edu>
+ *  - made the 'shell' interface more generic, i.e. it is now
+ *    possible to have 'telnetd' run an arbitrary 'shell'
+ *    program. The default, however, is CEXP.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
