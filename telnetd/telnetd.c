@@ -32,16 +32,42 @@
 #include <rtems/pty.h>
 #include <rtems/shell.h>
 #include <rtems/telnetd.h>
+#include <rtems/bspIo.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
+#include <string.h>
+#include <syslog.h>
 
 #include <cexp.h>
 #include <rtems/userenv.h>
 #include <rtems/error.h>
+
+#define PARANOIA
+
+struct shell_args {
+	char	*devname;
+	void	*arg;
+	char	peername[16];
+};
+
+static void cexpWrap(char *dev, void *arg);
+static int sockpeername(int sock, char *buf, int bufsz);
+
+/***********************************************************/
+rtems_id            telnetd_task_id      =0;
+rtems_unsigned32    telnetd_stack_size   =32000;
+rtems_task_priority telnetd_task_priority=100;
+void				(*telnetd_shell)(char *, void*)=cexpWrap;
+void				*telnetd_shell_arg	 =0;
+
+static rtems_id		connLimit			 =0;
+
+char * (*do_get_pty)(int)=0;
 
 static void
 cexpWrap(char *dev, void *arg)
@@ -50,16 +76,89 @@ char	*args[]={"Cexp-telnet",0};
 	fprintf(stderr,"[Telnet:] starting cexp on %s\n",dev);
 	cexp_main(1,args);
 }
-/***********************************************************/
-rtems_id            telnetd_task_id      =0;
-rtems_unsigned32    telnetd_stack_size   =32000;
-rtems_task_priority telnetd_task_priority=100;
-void				(*telnetd_shell)(char *, void*)=cexpWrap;
-void				*telnetd_shell_arg	 =0;
-int					telnetd_dont_spawn	 =0;
+
+static char *grab_a_Connection(int des_socket, struct sockaddr_in *srv, char *peername, int sz)
+{
+char	*rval = 0;
+int		size_adr = sizeof(*srv);
+int		acp_sock;
+
+	/* wait until the number of active connections drops */
+	if (connLimit)
+		rtems_semaphore_obtain(connLimit, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
+
+	acp_sock = accept(des_socket,(struct sockaddr*)srv,&size_adr);
+
+	if (acp_sock<0) {
+		perror("telnetd:accept");
+		goto bailout;
+	};
+
+	if ( !(rval=do_get_pty(acp_sock)) ) {
+		syslog( LOG_DAEMON | LOG_ERR, "telnetd: unable to obtain PTY");
+		/* NOTE: failing 'do_get_pty()' closed the socket */
+		goto bailout;
+	}
+
+	if (sockpeername(acp_sock, peername, sz))
+		strncpy(peername, "<UNKNOWN>", sz);
+
+#ifdef PARANOIA
+	syslog(LOG_DAEMON | LOG_INFO,
+			"telnetd: accepted connection from %s on %s",
+			peername,
+			rval);
+#endif
+
+bailout:
+
+	if (!rval && connLimit) {
+		rtems_semaphore_release(connLimit);
+	}
+			
+	return rval;
+}
 
 
-char * (*do_get_pty)(int)=0;
+static void release_a_Connection(char *devname, char *peername, FILE **std, int n)
+{
+
+#ifdef PARANOIA
+	syslog( LOG_DAEMON | LOG_INFO,
+			"telnetd: releasing connection from %s on %s",
+			peername,
+			devname );
+#endif
+
+	while (--n>=0)
+		if (std[n]) fclose(std[n]);
+
+	if (connLimit)
+			rtems_semaphore_release(connLimit);
+}
+
+static int sockpeername(int sock, char *buf, int bufsz)
+{
+struct sockaddr_in peer;
+int len  = sizeof(peer);
+
+int rval = sock < 0;
+
+	if ( !rval)
+		rval = getpeername(sock, (struct sockaddr*)&peer, &len);
+
+	if ( !rval )
+		rval = !inet_ntop( AF_INET, &peer.sin_addr, buf, bufsz );
+
+	return rval;
+}
+
+#if 1
+#define INSIDE_TELNETD
+#include "check_passwd.c"
+#else
+#define check_passwd(arg) 0
+#endif
 
 
 static rtems_task
@@ -69,13 +168,15 @@ spawned_shell(rtems_task_argument arg);
 rtems_task
 rtems_task_telnetd(rtems_task_argument task_argument)
 {
-int					des_socket, acp_socket;
+int					des_socket;
 struct sockaddr_in	srv;
 char				*devname;
+char				peername[16];
 int					i=1;
 int					size_adr;
 rtems_id 			task_id;	/* unused */
 rtems_status_code	sc;
+struct shell_args	*arg;
 
 	if ((des_socket=socket(PF_INET,SOCK_STREAM,0))<0) {
 		perror("telnetd:socket");
@@ -104,62 +205,66 @@ rtems_status_code	sc;
 	 * was started from the console anyways..
 	 */
 	do {
-	  acp_socket=accept(des_socket,(struct sockaddr*)&srv,&size_adr);
-	  if (acp_socket<0) {
-		perror("telnetd:accept");
-		break;
-	  };
-	  if (do_get_pty && (devname = do_get_pty(acp_socket)) ) {
-#if 0
-			  FILE *f;
-			  if (!(f=fopen(devname,"rw"))) {
-					  perror("opening PTY");
-			  } else {
-				int ch;
-				while (EOF!=(ch=fgetc(f)) && 4!=ch) {
-						printk("%c",ch);
-				}
-				printk("\nEOF on PTY\n");
-			    fclose(f);
-				printk("closed PTY\n");
-			  }
-			  close(acp_socket);
-#else
-			  if (telnetd_dont_spawn) {
-					if ( 0 == check_passwd() )
-						telnetd_shell(devname, telnetd_shell_arg);
-			  } else if ((sc=rtems_task_create(
-						rtems_build_name(
-								devname[5],
-								devname[6],
-								devname[7],
-								devname[8]),
-						telnetd_task_priority,
-						telnetd_stack_size,
-						RTEMS_DEFAULT_MODES,
-						RTEMS_LOCAL | RTEMS_FLOATING_POINT,
-						&task_id)) ||
-					(sc=rtems_task_start(
-						task_id,
-						spawned_shell,
-						(rtems_task_argument)devname))) {
-				rtems_error(sc,"Telnetd: spawning child task");
-				close(acp_socket);
-			  }
-#if 0
-	   shell_init(&devname[5],
-		      telnetd_stack_size,
-		      telnetd_task_priority,
-		      devname,B9600|CS8,FALSE);
-#endif
-#endif
+	  devname = grab_a_Connection(des_socket, &srv, peername, sizeof(peername));
+
+	  if ( !devname ) {
+		/* if something went wrong, sleep for some time */
+		sleep(10);
+		continue;
+	  }
+	  if ( ! connLimit ) {
+		/* no limit was set; this means we should execute
+		 * the shell in 'telnetd' context...
+		 */
+		if ( 0 == check_passwd(peername) )
+			telnetd_shell(devname, telnetd_shell_arg);
 	  } else {
-			if (!do_get_pty) {
-				printk("PTY driver probably not registered\n");
-			}
-           close(acp_socket);
-	  };
+		arg = malloc( sizeof(*arg) );
+
+		arg->devname = devname;
+		arg->arg = telnetd_shell_arg;
+		strncpy(arg->peername, peername, sizeof(arg->peername));
+
+		if ((sc=rtems_task_create(
+				rtems_build_name(
+						devname[5],
+						devname[6],
+						devname[7],
+						devname[8]),
+				telnetd_task_priority,
+				telnetd_stack_size,
+				RTEMS_DEFAULT_MODES,
+				RTEMS_LOCAL | RTEMS_FLOATING_POINT,
+				&task_id)) ||
+			(sc=rtems_task_start(
+				task_id,
+				spawned_shell,
+				(rtems_task_argument)arg))) {
+
+			FILE *dummy;
+
+			rtems_error(sc,"Telnetd: spawning child task");
+			/* hmm - the pty driver slot can only be
+			 * released by opening and subsequently
+			 * closing the PTY - this also closes
+			 * the underlying socket. So we mock up
+			 * a stream...
+			 */
+
+			if ( !(dummy=fopen(devname,"r+")) )
+				perror("Unable to dummy open the pty, losing a slot :-(");
+			release_a_Connection(devname, peername, &dummy, 1);
+			free(arg);
+			sleep(2); /* don't accept connections too fast */
+  		}
+	  }
 	} while(1);
+	/* TODO: how to free the connection semaphore? But then - 
+	 *       stopping the daemon is probably only needed during
+	 *       development/debugging.
+	 *       Finalizer code should collect all the connection semaphore
+	 *       counts and eventually clean up...
+	 */
 	close(des_socket);
 	telnetd_task_id=0;
 	rtems_task_delete(RTEMS_SELF);
@@ -194,7 +299,7 @@ int rtems_initialize_telnetd(void) {
 	return (int)sc;
 }
 /***********************************************************/
-int startTelnetd(void (*cmd)(char *, void *), void *arg, int dontSpawn, int stack, int priority)
+int startTelnetd(void (*cmd)(char *, void *), void *arg, int maxNumConnections, int stack, int priority)
 {
 	rtems_status_code	sc;
 
@@ -203,10 +308,36 @@ int startTelnetd(void (*cmd)(char *, void *), void *arg, int dontSpawn, int stac
 		return 1;
 	};
 
+	if ( !do_get_pty ) {
+		fprintf(stderr,"PTY driver probably not registered\n");
+		return 1;
+	}
+
 	if (cmd)
 		telnetd_shell=cmd;
 	telnetd_shell_arg=arg;
-	telnetd_dont_spawn=dontSpawn;
+	/* Set the default maximal number of simultaneous connections
+     * This parameter means:
+	 *  maxNumConnections == 0 --> select default.
+	 *  maxNumConnections > 0  set limit of simultanously open connections.
+	 *  maxNumConnections < 0  dont spawn the shell but execute it in telnetd's
+	 *                         context.
+     */
+	if (0 == maxNumConnections)
+		maxNumConnections = 3;
+	if (maxNumConnections > 0) {
+		if (maxNumConnections > MAX_PTYS)
+			maxNumConnections = MAX_PTYS;
+		assert( RTEMS_SUCCESSFUL ==
+				rtems_semaphore_create(
+					rtems_build_name('t','n','t','d'),
+					maxNumConnections,
+					RTEMS_FIFO | RTEMS_COUNTING_SEMAPHORE | 
+					RTEMS_NO_INHERIT_PRIORITY | RTEMS_LOCAL |
+					RTEMS_NO_PRIORITY_CEILING,
+					0,
+					&connLimit) );
+	}
 	telnetd_stack_size=stack;
 	telnetd_task_priority=priority;
 
@@ -227,12 +358,12 @@ int register_telnetd(void) {
 
 /* utility wrapper */
 static rtems_task
-spawned_shell(rtems_task_argument arg)
+spawned_shell(rtems_task_argument targ)
 {
 rtems_status_code	sc;
 FILE				*std[3]={0};
 int					i;
-char				*devname=(char*)arg;
+struct shell_args	*arg = (struct shell_args *)targ;
 
 	sc=rtems_libio_set_private_env();
 
@@ -243,7 +374,7 @@ char				*devname=(char*)arg;
 
 	/* redirect stdio */
 	for (i=0; i<3; i++) {
-		if ( !(std[i]=fopen(devname,"r+")) ) {
+		if ( !(std[i]=fopen(arg->devname,"r+")) ) {
 			perror("unable to open stdio");
 			goto cleanup;
 		}
@@ -253,14 +384,12 @@ char				*devname=(char*)arg;
 	stderr = std[2];
 
 	/* call their routine */
-	if ( 0 == check_passwd() )
-		telnetd_shell(devname, telnetd_shell_arg);
+	if ( 0 == check_passwd(arg->peername) )
+		telnetd_shell(arg->devname, arg->arg);
 
 cleanup:
-	for (i=0; i<3; i++) {
-		if (std[i])
-			fclose(std[i]);
-	}
+	release_a_Connection(arg->devname, arg->peername, std, 3);
+	free(arg);
 	rtems_task_delete(RTEMS_SELF);
 }
 
