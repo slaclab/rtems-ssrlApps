@@ -6,7 +6,7 @@
 #
 
 # C source names, if any, go here -- minus the .c
-C_PIECES=telnetd pty
+C_PIECES=telnetd pty des
 C_FILES=$(C_PIECES:%=%.c)
 C_O_FILES=$(C_PIECES:%=${ARCH}/%.o)
 
@@ -24,6 +24,7 @@ S_O_FILES=$(S_FILES:%.S=${ARCH}/%.o)
 
 SRCS=$(C_FILES) $(CC_FILES) $(H_FILES) $(S_FILES)
 OBJS=$(C_O_FILES) $(CC_O_FILES) $(S_O_FILES)
+
 
 PGMS=${ARCH}/telnetd.obj
 
@@ -74,6 +75,8 @@ $(filter %.obj, $(PGMS)): ${OBJS}
 ifndef RTEMS_SITE_INSTALLDIR
 RTEMS_SITE_INSTALLDIR = $(PROJECT_RELEASE)
 endif
+
+$(ARCH)/telnetd.o: check_passwd.c
 
 # Install the program(s), appending _g or _p as appropriate.
 # for include files, just use $(INSTALL_CHANGE)
