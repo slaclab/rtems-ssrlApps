@@ -133,6 +133,7 @@ bfd_vma		addr;
 	while(len--) {
 		dinf.fprintf_func(dinf.stream,"0x%08x: ",addr);
 		dinf.fprintf_func(dinf.stream,"(0x%08x) ",*(unsigned long*)addr);
+		dinf.fprintf_func(dinf.stream,"%2i ",dinf.bytes_per_line);
 		addr+=da(addr,&dinf);
 		fprintf(stderr,"\n");
 	}

@@ -3,8 +3,8 @@
 # header :-(. Therefore, we must provide a consistent set of library / header
 # paths...
 BINUTILS=/home/till/gnu/binutils-2.11.1
-#ARCH=build-i386-linux
-ARCH=build-ppc-linux
+ARCH=build-i386-linux
+#ARCH=build-ppc-linux
 DEBUG=DEBUG
 CFLAGS+=-DUSE_ELF_STUFF -I $(BINUTILS)/bfd
 #MDBG=/home/till/slac/xfm/src/mdbg/mdbg.o
