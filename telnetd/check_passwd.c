@@ -62,7 +62,7 @@ char			salt[3];
 	strncpy(salt,pw,2);
 	salt[2]=0;
 
-	if ( tcsetattr(STDI_FD, TCSADRAIN, &t) ) {
+	if ( tcsetattr(STDI_FD, TCSANOW, &t) ) {
 		perror("check_passwd(): tcsetattr");
 		goto done;	
 	}
@@ -113,7 +113,7 @@ char			salt[3];
 done:
 	/* what to do if restoring the flags fails?? */
 	if (restore_flags)
-		tcsetattr(STDI_FD, TCSADRAIN, &told);
+		tcsetattr(STDI_FD, TCSANOW, &told);
 	
 	if (rval) {
 		sleep(2);

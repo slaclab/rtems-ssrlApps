@@ -49,6 +49,9 @@
 
 #define PARANOIA
 
+extern char *telnet_get_pty(int socket);
+extern int   telnet_pty_inited;
+
 struct shell_args {
 	char	*devname;
 	void	*arg;
@@ -62,12 +65,9 @@ static int sockpeername(int sock, char *buf, int bufsz);
 rtems_id            telnetd_task_id      =0;
 rtems_unsigned32    telnetd_stack_size   =32000;
 rtems_task_priority telnetd_task_priority=100;
+int					telnetd_dont_spawn   =0;
 void				(*telnetd_shell)(char *, void*)=cexpWrap;
 void				*telnetd_shell_arg	 =0;
-
-static rtems_id		connLimit			 =0;
-
-char * (*do_get_pty)(int)=0;
 
 static void
 cexpWrap(char *dev, void *arg)
@@ -83,10 +83,6 @@ char	*rval = 0;
 int		size_adr = sizeof(*srv);
 int		acp_sock;
 
-	/* wait until the number of active connections drops */
-	if (connLimit)
-		rtems_semaphore_obtain(connLimit, RTEMS_WAIT, RTEMS_NO_TIMEOUT);
-
 	acp_sock = accept(des_socket,(struct sockaddr*)srv,&size_adr);
 
 	if (acp_sock<0) {
@@ -94,7 +90,7 @@ int		acp_sock;
 		goto bailout;
 	};
 
-	if ( !(rval=do_get_pty(acp_sock)) ) {
+	if ( !(rval=telnet_get_pty(acp_sock)) ) {
 		syslog( LOG_DAEMON | LOG_ERR, "telnetd: unable to obtain PTY");
 		/* NOTE: failing 'do_get_pty()' closed the socket */
 		goto bailout;
@@ -112,10 +108,6 @@ int		acp_sock;
 
 bailout:
 
-	if (!rval && connLimit) {
-		rtems_semaphore_release(connLimit);
-	}
-			
 	return rval;
 }
 
@@ -133,8 +125,6 @@ static void release_a_Connection(char *devname, char *peername, FILE **std, int 
 	while (--n>=0)
 		if (std[n]) fclose(std[n]);
 
-	if (connLimit)
-			rtems_semaphore_release(connLimit);
 }
 
 static int sockpeername(int sock, char *buf, int bufsz)
@@ -165,7 +155,7 @@ static rtems_task
 spawned_shell(rtems_task_argument arg);
 
 /***********************************************************/
-rtems_task
+static rtems_task
 rtems_task_telnetd(rtems_task_argument task_argument)
 {
 int					des_socket;
@@ -212,10 +202,7 @@ struct shell_args	*arg;
 		sleep(10);
 		continue;
 	  }
-	  if ( ! connLimit ) {
-		/* no limit was set; this means we should execute
-		 * the shell in 'telnetd' context...
-		 */
+	  if ( telnetd_dont_spawn ) {
 		if ( 0 == check_passwd(peername) )
 			telnetd_shell(devname, telnetd_shell_arg);
 	  } else {
@@ -270,7 +257,7 @@ struct shell_args	*arg;
 	rtems_task_delete(RTEMS_SELF);
 }
 /***********************************************************/
-int rtems_initialize_telnetd(void) {
+static int rtems_initialize_telnetd(void) {
 	rtems_status_code sc;
 	
 #if 0
@@ -299,7 +286,7 @@ int rtems_initialize_telnetd(void) {
 	return (int)sc;
 }
 /***********************************************************/
-int startTelnetd(void (*cmd)(char *, void *), void *arg, int maxNumConnections, int stack, int priority)
+int startTelnetd(void (*cmd)(char *, void *), void *arg, int dontSpawn, int stack, int priority)
 {
 	rtems_status_code	sc;
 
@@ -308,38 +295,17 @@ int startTelnetd(void (*cmd)(char *, void *), void *arg, int maxNumConnections, 
 		return 1;
 	};
 
-	if ( !do_get_pty ) {
+	if ( !telnet_pty_inited ) {
 		fprintf(stderr,"PTY driver probably not registered\n");
 		return 1;
 	}
 
 	if (cmd)
-		telnetd_shell=cmd;
-	telnetd_shell_arg=arg;
-	/* Set the default maximal number of simultaneous connections
-     * This parameter means:
-	 *  maxNumConnections == 0 --> select default.
-	 *  maxNumConnections > 0  set limit of simultanously open connections.
-	 *  maxNumConnections < 0  dont spawn the shell but execute it in telnetd's
-	 *                         context.
-     */
-	if (0 == maxNumConnections)
-		maxNumConnections = 3;
-	if (maxNumConnections > 0) {
-		if (maxNumConnections > MAX_PTYS)
-			maxNumConnections = MAX_PTYS;
-		assert( RTEMS_SUCCESSFUL ==
-				rtems_semaphore_create(
-					rtems_build_name('t','n','t','d'),
-					maxNumConnections,
-					RTEMS_FIFO | RTEMS_COUNTING_SEMAPHORE | 
-					RTEMS_NO_INHERIT_PRIORITY | RTEMS_LOCAL |
-					RTEMS_NO_PRIORITY_CEILING,
-					0,
-					&connLimit) );
-	}
-	telnetd_stack_size=stack;
-	telnetd_task_priority=priority;
+		telnetd_shell = cmd;
+	telnetd_shell_arg     = arg;
+	telnetd_stack_size    = stack;
+	telnetd_task_priority = priority;
+	telnetd_dont_spawn    = dontSpawn;
 
 	sc=rtems_initialize_telnetd();
         if (sc!=RTEMS_SUCCESSFUL) return sc;
