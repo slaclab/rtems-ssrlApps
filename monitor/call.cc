@@ -112,7 +112,7 @@ char	*line,*buf=0;
 		goto cleanup;
 	}
 
-	printf("Entering the RTEMS Monitor...\n");
+	printf("Entering the RTEMS Monitor; it has its own shell -- try 'help'...\n");
 
 	while ( (line=gl_get_line(gl,"monitor>",NULL,0)) ) {
 		int		argc;
