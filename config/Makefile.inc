@@ -7,13 +7,14 @@
 
 # this may be overridden e.g. on the command line
 ifndef RTEMS_BSP
-RTEMS_BSP = svgm
+$(error RTEMS_BSP not set -- use either environment variable or pass on the command line)
 endif
 
 # support 'production' and development environments
 # (RTEMS/tools)
 ifndef RTEMS_WHICH
-RTEMS_WHICH = 4.6.0pre4
+###RTEMS_WHICH = 4.6.0pre4
+RTEMS_WHICH =
 endif
 
 # support different install locations (prod/devel)
@@ -23,19 +24,28 @@ RTEMS_SITE_WHICH = $(RTEMS_WHICH)
 endif
 
 ifndef RTEMS_TOP
-RTEMS_TOP = /afs/slac/package/rtems/$(RTEMS_WHICH)
+###RTEMS_TOP = /afs/slac/package/rtems/$(RTEMS_WHICH)
+RTEMS_TOP = /opt
 endif
 
-#Where to install, where to grab local packages
-ifndef RTEMS_SITE_DIR
-RTEMS_SITE_DIR = /afs/slac/g/spear/rtemsApplications/$(RTEMS_SITE_WHICH)
+#Where to install/grab SSRL packages
+ifndef RTEMS_SSRLAPPS_DIR
+###RTEMS_SSRLAPPS_DIR = /afs/slac/g/spear/rtemsApplications/$(RTEMS_SITE_WHICH)
+RTEMS_SSRLAPPS_DIR = /opt/rtems/ssrlApps
 endif
+
+#Where to install/grab local packages
+ifndef RTEMS_SITE_DIR
+RTEMS_SITE_DIR = $(RTEMS_SSRLAPPS_DIR)
+endif
+
 
 #################################################################
 # There should be no need to change anything below here
 
 #for EPICS
-RTEMS_BASE = $(RTEMS_TOP)/tools/@sys
+###RTEMS_BASE = $(RTEMS_TOP)/tools/@sys
+RTEMS_BASE = $(RTEMS_TOP)/rtems
 
 # An ugly hack. In fact, the <top>/make/custom/<bsp>.cfg
 # files need to be patched to define RTEMS_CPU _prior_
