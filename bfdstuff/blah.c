@@ -1,10 +1,11 @@
 #include <stdio.h>
 
-#if 0
+#ifdef __cplusplus
 extern int meir;
 
 int *falladah=&meir;
 int kall=meir;
+int brall;
 
 
 class blarr {
@@ -28,6 +29,10 @@ blah(int arg)
 
 #else
 extern int falladah;
+int *kall=&falladah;
+int bralldef=0xded;
+int brall;
+
 int
 blah(int arg)
 {
