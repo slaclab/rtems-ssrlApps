@@ -77,14 +77,13 @@ CLOBBER_ADDITIONS +=
 
 all:	${ARCH} $(SRCS) $(PGMS)
 
-$(filter %.obj, $(PGMS)): ${OBJS} ${LINK_FILES}
-	$(LD) $(AM_CFLAGS) $(AM_LDFLAGS) -r -o $@ $(LINK_OBJS) $(LD_PATHS:%=-L%) $(LINK_LIBS)
-
-$(filter %.exe, $(PGMS)): ${OBJS} ${LINK_FILES}
-	$(make-exe)
-	xsyms $@ $(@:%.exe=%.sym)
+$(filter %.obj, $(PGMS)): ${OBJS}
+	$(make-obj)
 
 # Install the program(s), appending _g or _p as appropriate.
 # for include files, just use $(INSTALL_CHANGE)
 install:  all
 	$(INSTALL_VARIANT) -m 555 ${PGMS} ${RTEMS_SITE_INSTALLDIR}/bin
+
+blah:
+	echo $(LDFLAGS)
