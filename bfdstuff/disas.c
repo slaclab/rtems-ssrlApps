@@ -2,7 +2,7 @@
 #include "dis-asm.h"
 #include <stdio.h>
 
-char		*target="i686-pc-linux-gnu";
+const char	*target="i686-pc-linux-gnu";
 static int	dynsym=0;
 
 char  halla;
@@ -43,7 +43,7 @@ PTR			minisyms;
 char		*msp;
 unsigned	sz,i;
 asymbol		*store_s, *as;
-char		**matching;
+const char	**matching;
 disassemble_info dinf;
 int			len;
 bfd_vma		addr;
@@ -104,8 +104,8 @@ bfd_vma		addr;
 	INIT_DISASSEMBLE_INFO(dinf, stderr, fprintf);
 	fprintf(stderr,"ORIG INF %x\n",&dinf);
 //	dinf.read_memory_func=mrf;
-	dinf.buffer=main;
-	dinf.buffer_vma=main;
+	dinf.buffer=(bfd_byte *)main;
+	dinf.buffer_vma=(bfd_vma)main;
 	dinf.buffer_length=100;
 	if (bfd_big_endian(abfd)) {
 		dinf.display_endian = dinf.endian=BFD_ENDIAN_BIG;
@@ -115,6 +115,7 @@ bfd_vma		addr;
 		fprintf(stderr,"UNKNOWN ENDIANNESS\n");
 		return 1;
 	}
+	bfd_close_all_done(abfd);
 	len=10;
 	addr=dinf.buffer_vma;
 	while(len--) {
