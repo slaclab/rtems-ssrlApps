@@ -1,37 +1,36 @@
 #
-# BSP specific settings. To be included in application Makefiles
+# Settings to use a specific version of RTEMS
+# along with its toolchain and locally installed
+# stuff.
 #
+#################################################################
 
-include $(RTEMS_MAKEFILE_PATH)/rtems-version.cfg
+# this may be overridden e.g. on the command line
+ifndef RTEMS_BSP
+RTEMS_BSP = svgm
+endif
 
+# support 'production' and development environments
+RTEMS_WHICH = prod
 
-RTEMS_CUSTOM = $(RTEMS_MAKEFILE_PATH)/site.cfg
-PROJECT_ROOT = $(prefix)
+RTEMS_TOP = /afs/slac/package/rtems/$(RTEMS_WHICH)
 
-#TODO: Hmm. These are perhaps still BSP specific???
-RTEMS_USE_OWN_PDIR = no
-RTEMS_HAS_POSIX_API = yes
-RTEMS_HAS_ITRON_API = no
-RTEMS_USE_MACROS = no
-RTEMS_HAS_CPLUSPLUS = yes
-RTEMS_USE_GCC272 = no
-RTEMS_LIBC_DIR = 
+#Where to install, where to grab local packages
+RTEMS_SITE_DIR = /afs/slac/g/spear/rtemsApplications/$(RTEMS_WHICH)
 
-export CC
-export AS
-export LD
-export NM
-export AR
-export SIZE
-export OBJCOPY
-export XSYMS
-export RTEMS_SITE_DIR
+#################################################################
+# There should be no need to change anything below here
 
+#for EPICS
+RTEMS_BASE = $(RTEMS_TOP)/tools/@sys
 
-export RTEMS_BSP
-export RTEMS_CUSTOM
-export PROJECT_ROOT
+#RTEMS 
+prefix = $(RTEMS_TOP)/rtems
+#RTEMS (target specific) libraries
+exec_prefix = $(prefix)/powerpc-rtems
+#Toolchaing
+tools_prefix = $(RTEMS_BASE)/bin
 
-# FIXME: The following shouldn't be here
-RTEMS_ROOT = $(PROJECT_ROOT)
-export RTEMS_ROOT
+# continue with generic/common settings
+
+include $(RTEMS_MAKEFILE_PATH)/Makefile.inc.generic
