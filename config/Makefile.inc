@@ -13,7 +13,7 @@ endif
 # support 'production' and development environments
 # (RTEMS/tools)
 ifndef RTEMS_WHICH
-RTEMS_WHICH = 4.6.0pre2
+RTEMS_WHICH = 4.6.0pre4
 endif
 
 # support different install locations (prod/devel)
