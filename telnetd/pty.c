@@ -40,6 +40,7 @@ extern "C" {
 #include <rtems.h>
 #include <rtems/libio.h>
 #include <bsp.h>
+#include <rtems/bspIo.h>
 #include <rtems/pty.h>
 #include <errno.h>
 #ifdef __cplusplus
