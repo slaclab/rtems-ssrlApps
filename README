@@ -14,6 +14,16 @@ from scratch, the following steps are necessary:
  3. Create 'configure' scripts in some source directories
  4. Build and install the software
 
+Prerequisites
+=============
+
+In addition to the regular 'GNU' toolchain, two more
+host-tools, 'xsyms' and 'ldep' are needed. These
+utilites must be checked out from CVS (modules 'xsyms'
+and 'ldep', respectively), built and installed
+in a place where they can be found, prior to building
+the rtemsApplications.
+
 0. Quick instructions for the impatient
 =======================================
 
