@@ -2,6 +2,7 @@
 #include <libiberty.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "tab.h"
 
 #ifdef USE_MDBG
@@ -14,6 +15,13 @@
 
 #define CACHE_LINE_SIZE 32
 
+#define MAX_NUM_MODULES 256
+#define LD_WORDLEN		5
+#define BITMAP_DEPTH	((MAX_NUM_MODULES)>>(LD_WORDLEN))
+#define BITMAP_SET(bm,bitno) (((bm)[(bitno)>>LD_WORDLEN]) |= (1<<((bitno)&((1<<LD_WORDLEN)-1))))
+#define BITMAP_TST(bm,bitno) (((bm)[(bitno)>>LD_WORDLEN]) &  (1<<((bitno)&((1<<LD_WORDLEN)-1))))
+typedef	unsigned		BitmapWord;
+
 /* an output segment description */
 typedef struct SegmentRec_ {
 	PTR				chunk;		/* pointer to memory */
@@ -25,8 +33,8 @@ typedef struct SegmentRec_ {
 #define NUM_SEGS 1
 
 typedef struct LinkDataRec_ {
-	SegmentRec		segs[NUM_SEGS];
-	asymbol			**st;
+	SegmentRec	segs[NUM_SEGS];
+	asymbol		**st;
 	int			errors;
 } LinkDataRec, *LinkData;
 
@@ -186,12 +194,13 @@ char		buf[1000];
  *   - resolved undef or common slots are replaced by new symbols
  *     pointing to the ABS section
  *   - KEEP flag is set for all globals defined by this object.
+ *   - raise a bit for each module referenced by this new one.
  */
 static int
-resolve_syms(bfd *abfd, asymbol **syms)
+resolve_syms(bfd *abfd, asymbol **syms, BitmapWord *depend)
 {
 asymbol *sp;
-int		i,num_new_commons=0,errs=0;
+int		i,num_new_commons=0,errs=0,modind;
 
 	/* resolve undefined and common symbols;
 	 * find name clashes
@@ -207,20 +216,23 @@ int		i,num_new_commons=0,errs=0;
 		if ( (BSF_LOCAL & sp->flags) )
 			continue;
 
-		ts=tstSymLookup(bfd_asymbol_name(sp));
+		ts=tstSymLookup(bfd_asymbol_name(sp), &modind);
 
 		if (bfd_is_und_section(sect)) {
-
 			if (ts) {
 				/* Resolved reference; replace the symbol pointer
 				 * in this slot with a new asymbol holding the
 				 * resolved value.
 				 */
 				sp=syms[i]=bfd_make_empty_symbol(abfd);
+				/* copy name pointer */
 				bfd_asymbol_name(sp) = bfd_asymbol_name(ts);
 				sp->value=ts->value;
 				sp->section=bfd_abs_section_ptr;
 				sp->flags=BSF_GLOBAL;
+				/* mark the referenced module in the bitmap */
+				assert(modind < MAX_NUM_MODULES);
+				BITMAP_SET(depend,modind);
 			} else {
 				fprintf(stderr,"Unresolved symbol: %s\n",bfd_asymbol_name(sp));
 				errs++;
@@ -228,14 +240,19 @@ int		i,num_new_commons=0,errs=0;
 		}
 		else if (bfd_is_com_section(sect)) {
 			if (ts) {
-				/* use existing value */
+				/* use existing value of common sym */
 				sp = bfd_make_empty_symbol(abfd);
+
 				/* TODO: check size and alignment */
+
 				/* copy pointer to old name */
 				bfd_asymbol_name(sp) = bfd_asymbol_name(syms[i]);
 				sp->value=ts->value;
 				sp->section=bfd_abs_section_ptr;
 				sp->flags=BSF_GLOBAL;
+				/* mark the referenced module in the bitmap */
+				assert(modind < MAX_NUM_MODULES);
+				BITMAP_SET(depend,modind);
 			} else {
 				/* it's the first definition of this common symbol */
 				asymbol *swap;
@@ -257,7 +274,8 @@ int		i,num_new_commons=0,errs=0;
 
 				errs++;
 				/* TODO: check size and alignment; allow multiple
-				 *       definitions???
+				 *       definitions??? - If yes, we have to track
+				 *		 the dependencies also.
 				 */
 			} else {
 				/* new symbol defined by the loaded object; account for it */
@@ -320,7 +338,7 @@ printf("TSILL align_pwr %i\n",tsill);
 }
 
 static asymbol **
-slurp_symtab(bfd *abfd)
+slurp_symtab(bfd *abfd, BitmapWord *depend)
 {
 asymbol 		**rval=0;
 long			i;
@@ -344,7 +362,7 @@ long			num_new_commons;
 	}
 
 
-	if ((num_new_commons=resolve_syms(abfd,rval))<0) {
+	if ((num_new_commons=resolve_syms(abfd,rval,depend))<0) {
 		free(rval);
 		return 0;
 	}
@@ -388,16 +406,32 @@ int i,j;
 	__asm__ __volatile__("sync; isync");
 }
 
+#if 0
+typedef struct CexpModuleRec_ {
+	SymTab
+	char *name;
+	Segments					/* memory segments */
+	CexpModuleList	depend;		/* modules referenced this one */
+	CexpModule		next;		/* linked list of modules */
+} CexpModuleRec, *CexpModule;
+#endif
 
 int
 main(int argc, char **argv)
 {
 bfd 			*abfd=0;
 LinkDataRec		ldr;
-int			rval=1,i,j;
+int				rval=1,i,j;
 TstSym			sm;
+BitmapWord		depend[BITMAP_DEPTH];
 
 	memset(&ldr,0,sizeof(ldr));
+	memset(depend,0,sizeof(depend));
+
+	/* basic check for our bitmaps */
+	assert( (1<<LD_WORDLEN) <= sizeof(BitmapWord)*8 );
+
+	/* TODO: locking, module name */
 
 	if (argc<2) {
 		fprintf(stderr,"Need filename arg\n");
@@ -418,7 +452,7 @@ printf("TSILL: bfd_log2(1025)=%i\n",bfd_log2(1025));
 		goto cleanup;
 	}
 
-	if (!(ldr.st=slurp_symtab(abfd))) {
+	if (!(ldr.st=slurp_symtab(abfd,depend))) {
 		fprintf(stderr,"Error creating symbol table\n");
 		goto cleanup;
 	}
@@ -443,12 +477,22 @@ memset(ldr.segs[0].chunk,0xee,ldr.segs[0].size); /*TSILL*/
 
 	/* TODO: call constructors */
 
+	/* TODO: set dependency lists
+
+	for (m=first, i=0; m; m=m->next, i++) {
+		if (BITMAP_TST(depend,i))
+			add_to_dep_lists(thismod, m);
+	}
+
+	 */
+
 	for (i=0; ldr.st[i]; i++) {
 		if (0==strcmp(bfd_asymbol_name(ldr.st[i]),"blah")) {
 			printf("FOUND blah; is 0x%08x\n",bfd_asymbol_value(ldr.st[i]));
 			((void (*)(int))bfd_asymbol_value(ldr.st[i]))(0xfeedcafe);
 		}
 	}
+
 	rval=0;
 
 cleanup:
@@ -456,8 +500,22 @@ cleanup:
 	if (abfd) bfd_close_all_done(abfd);
 	for (i=0; i<NUM_SEGS; i++)
 		if (ldr.segs[i].chunk) free(ldr.segs[i].chunk);
+
+	/* TODO unlock */
 #ifdef USE_MDBG
 	printf("Memory leaks found: %i\n",mdbgPrint(0,0));
 #endif
 	return rval;
 }
+
+/* TODO: unload a module
+	
+	if (check_references())
+		error("still needed");
+
+	remove_from_module_list(this);
+
+	invalidate_caches();
+	free_resources();
+	remove_from_deplists();
+ */
