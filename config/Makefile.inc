@@ -5,36 +5,53 @@
 #
 #################################################################
 
+#### CD specific settings
+#set version
+RTEMS_WHICH        = 4.6.2
+# define a variable for the CD topdir
+RTEMS_CD_TOP       = /opt/rtems$(RTEMS_WHICH)CD
+#where to pick up RTEMS (installation)
+RTEMS_TOP          = $(RTEMS_CD_TOP)/target
+#where to pick up the toolchain; RTEMS_BASE is also used by EPICS
+RTEMS_BASE         = $(RTEMS_CD_TOP)/host/$(RTEMS_HOST_ARCH)
+#NOTE: for the CD, we add yet another area, the RTEMS_SSRLAPPS_DIR
+#      which is where the ssrl applications are installed.
+#      Since this may be read-only (CD), the user can then
+#      use RTEMS_SITE_DIR for installing the examples / other
+#      applications.
+#      Hence, there are three areas:
+#      RTEMS_TOP          -- rtems proper
+#      RTEMS_SSRLAPPS_DIR -- ssrl applications, cexp, nfs etc.
+#      RTEMS_SITE_DIR     -- user installation top
+#
+#where to install ssrl applications (into the 'target' area)
+RTEMS_SSRLAPPS_DIR = $(RTEMS_TOP)/ssrlApps
+#where to install documentation 
+RTEMS_SITE_DOCDIR  = $(RTEMS_CD_TOP)/doc
+
 # this may be overridden e.g. on the command line
 ifndef RTEMS_BSP
 $(error RTEMS_BSP not set -- use either environment variable or pass on the command line)
 endif
 
 # support 'production' and development environments
-# (RTEMS/tools)
+# (RTEMS and toolchain)
 ifndef RTEMS_WHICH
-###RTEMS_WHICH = 4.6.0pre4
 RTEMS_WHICH =
 endif
 
 # support different install locations (prod/devel)
-# (rtemsApplications)
+# (SSRL rtemsApplications)
 ifndef RTEMS_SITE_WHICH
 RTEMS_SITE_WHICH = $(RTEMS_WHICH)
 endif
 
-RTEMS_SITE_MANDIR=/opt/rtems4.6.2CD/doc/man
-
-
 ifndef RTEMS_TOP
-###RTEMS_TOP = /afs/slac/package/rtems/$(RTEMS_WHICH)
-RTEMS_TOP = /opt/rtems4.6.2CD
+$(error RTEMS_TOP not set -- needs to point to your RTEMS installation top directory)
 endif
 
-#Where to install/grab SSRL packages
-ifndef RTEMS_SSRLAPPS_DIR
-###RTEMS_SSRLAPPS_DIR = /afs/slac/g/spear/rtemsApplications/$(RTEMS_SITE_WHICH)
-RTEMS_SSRLAPPS_DIR = $(RTEMS_TOP)/target/ssrlApps
+ifndef RTEMS_BASE
+$(error RTEMS_BASE not set -- needs to point to your RTEMS toolchain installation top directory)
 endif
 
 #Where to install/grab local packages
@@ -42,26 +59,26 @@ ifndef RTEMS_SITE_DIR
 RTEMS_SITE_DIR = $(RTEMS_SSRLAPPS_DIR)
 endif
 
-ifndef RTEMS_SITE_MANDIR
-RTEMS_SITE_MANDIR = $(RTEMS_SSRLAPPS_DIR)
+ifndef RTEMS_SITE_DOCDIR
+RTEMS_SITE_DOCDIR = $(RTEMS_SITE_DIR)
 endif
 
 #AFS:
 #RTEMS_HOST_ARCH=@sys
 
 ifndef RTEMS_HOST_ARCH
-ifdef EPICS_HOST_ARCH
-RTEMS_HOST_ARCH=$(EPICS_HOST_ARCH)
-endif
-RTEMS_HOST_ARCH=i386_linux24
+  RTEMS_HOST_ARCH:=$(shell if [ -x sys ] ; then sys; fi)
+  ifeq ($(RTEMS_HOST_ARCH)xx,xx)
+    ifdef EPICS_HOST_ARCH
+    RTEMS_HOST_ARCH:=$(EPICS_HOST_ARCH)
+    else
+    RTEMS_HOST_ARCH:=i386_linux24
+    endif
+  endif
 endif
 
 #################################################################
 # There should be no need to change anything below here
-
-#for EPICS
-##RTEMS_BASE = $(RTEMS_TOP)/tools/@sys
-RTEMS_BASE = $(RTEMS_TOP)/host/$(RTEMS_HOST_ARCH)
 
 # An ugly hack. In fact, the <top>/make/custom/<bsp>.cfg
 # files need to be patched to define RTEMS_CPU _prior_
@@ -72,9 +89,9 @@ RTEMS_CPU = powerpc
 endif
 
 #RTEMS 
-prefix = $(RTEMS_TOP)/target
+prefix       = $(RTEMS_TOP)
 #RTEMS (target specific) libraries
-exec_prefix = $(prefix)/$(RTEMS_CPU)-rtems
+exec_prefix  = $(prefix)/$(RTEMS_CPU)-rtems
 #Toolchain
 tools_prefix = $(RTEMS_BASE)/bin
 

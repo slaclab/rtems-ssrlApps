@@ -39,8 +39,8 @@ Usage:
 
  - Edit Makefile.inc to change
 
-     o the SITE are top directory,
-     o the RTEMS installation top directory,
+     o RTEMS_SITE to point to a 
+     o RTEMS_TOP to point to the RTEMS installation top directory,
      o the default BSP
 
  - Use one of the templates from THIS directory rather

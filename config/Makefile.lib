@@ -59,20 +59,17 @@ ifndef RTEMS_SITE_INSTALLDIR
 RTEMS_SITE_INSTALLDIR = $(PROJECT_RELEASE)
 endif
 
+ifndef RTEMS_SITE_BSP_INSTALLDIR
+RTEMS_SITE_BSP_INSTALLDIR = $(RTEMS_SITE_INSTALLDIR)
+endif
+
 ${RTEMS_SITE_INSTALLDIR}/include \
 ${RTEMS_SITE_INSTALLDIR}/lib \
-${RTEMS_SITE_INSTALLDIR}/bin \
-${RTEMS_SITE_INSTALLDIR}/$(RTEMS_BSP)/include \
-${RTEMS_SITE_INSTALLDIR}/$(RTEMS_BSP)/lib \
-${RTEMS_SITE_INSTALLDIR}/$(RTEMS_BSP)/bin :
+${RTEMS_SITE_INSTALLDIR}/bin:
 	test -d $@ || mkdir -p $@
 
-# Install the library, appending _g or _p as appropriate.
+# Install the program(s), appending _g or _p as appropriate.
 # for include files, just use $(INSTALL_CHANGE)
-#
-# NOTES:
-#  - BSP specific libraries, headers etc. should be installed to 
-#          $RTEMS_SITE_INSTALLDIR)/$(RTEMS_BSP)/lib
 #
 
 install:  all $(RTEMS_SITE_INSTALLDIR)/lib
