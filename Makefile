@@ -117,6 +117,7 @@ endif
 
 SUBDIRS+=monitor
 SUBDIRS+=telnetd
+SUBDIRS+=ntpNanoclock
 SUBDIRS+=system
 
 ifeq ("$(RTEMS_BSP)","svgm")
