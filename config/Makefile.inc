@@ -31,7 +31,7 @@ endif
 #Where to install/grab SSRL packages
 ifndef RTEMS_SSRLAPPS_DIR
 ###RTEMS_SSRLAPPS_DIR = /afs/slac/g/spear/rtemsApplications/$(RTEMS_SITE_WHICH)
-RTEMS_SSRLAPPS_DIR = /opt/rtems/ssrlApps
+RTEMS_SSRLAPPS_DIR = $(RTEMS_BASE)/ssrlApps
 endif
 
 #Where to install/grab local packages
@@ -45,7 +45,7 @@ endif
 
 #for EPICS
 ###RTEMS_BASE = $(RTEMS_TOP)/tools/@sys
-RTEMS_BASE = $(RTEMS_TOP)/rtems
+RTEMS_BASE = $(RTEMS_TOP)/rtems4.6.0CD
 
 # An ugly hack. In fact, the <top>/make/custom/<bsp>.cfg
 # files need to be patched to define RTEMS_CPU _prior_
@@ -56,7 +56,7 @@ RTEMS_CPU = powerpc
 endif
 
 #RTEMS 
-prefix = $(RTEMS_TOP)/rtems
+prefix = $(RTEMS_TOP)/rtems4.6.0CD
 #RTEMS (target specific) libraries
 exec_prefix = $(prefix)/$(RTEMS_CPU)-rtems
 #Toolchain
