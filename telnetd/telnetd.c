@@ -290,7 +290,8 @@ int startTelnetd(void (*cmd)(char *, void *), void *arg, int dontSpawn, int stac
 {
 	rtems_status_code	sc;
 
-	printf("This is rtems-telnetd (modified by Till Straumann), $Id$\n");
+	printf("This is rtems-telnetd (modified by Till Straumann)\");
+	printf("$Id$\n");
 	printf("Release $Name$\n");
 
 	if (telnetd_task_id) {
