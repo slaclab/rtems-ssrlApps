@@ -2,21 +2,21 @@
 #include <rtems.h>
 //#include <rtems/score/cpu.h>
 //#include <rtems/score/thread.h>
+#include <stdio.h>
 #ifdef PPC
 #include <libcpu/stackTrace.h>
-#endif
 #include <stdarg.h>
-#include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include <cexp.h>
+#endif
 
 
 #define NumberOf(arr) (sizeof(arr)/sizeof((arr)[0]))
 
 #define GETREG(var, nr)	__asm__ __volatile__("mr %0, %1":"=r"(var##nr):"i"(nr))
 
-
+#ifdef PPC
 int
 taskStack(rtems_id id)
 {
@@ -34,24 +34,18 @@ Context_Control		regs;
 	stackbuf[0]=0;
 	if (_Thread_Executing==tcb)
 		tcb=0;
-#ifdef PPC
 	CPU_stack_take_snapshot(
 					stackbuf,
 					NumberOf(stackbuf),
 					(void*)0,
 					(void*)(tcb ? tcb->Registers.pc : 0),
 					(void*)(tcb ? tcb->Registers.gpr1 : 0));
-#else
-#warning CPU_stack_take_snapshot() needs to be implemented for your architecture
-#endif
-
 	if (tcb) {
 		regs = tcb->Registers;
 	}
 
 	_Thread_Enable_dispatch();
 
-#ifdef PPC
 	if (!tcb) {
 		GETREG(regs.gpr,1);
 		GETREG(regs.gpr,2);
@@ -94,9 +88,6 @@ Context_Control		regs;
 			regs.cr);
 	printf("MSR:   0x%08x\n",
 			regs.msr);
-#else
-#error  register access/printing not implemented for this CPU architecture
-#endif
 
 	printf("\nStack Trace:\n");
 
@@ -118,3 +109,19 @@ Context_Control		regs;
 
 	return 0;
 }
+#else
+#warning CPU_stack_take_snapshot() needs to be implemented for your architecture
+#warning register access/printing not implemented for this CPU architecture
+#warning task stack dumping not implemented.
+
+/* dummy on architectures where we don't have GETREG and CPU_stack_take_snapshot */
+int
+taskStack(rtems_id id)
+{
+	fprintf(stderr,"Dumping a task's stack is not implemented for this architecture\n");
+	fprintf(stderr,"You need to implement CPU_stack_take_snapshot() and more, see\n");
+	fprintf(stderr,"    %s\n",__FILE__);
+	return -1;
+}
+
+#endif
