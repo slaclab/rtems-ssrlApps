@@ -100,8 +100,6 @@ AUTOCONFSUBDIRS+=cexp
 
 #SUBDIRS+=$(subst clean-recursive,.,$(filter clean-recursive,$@))
 
-SUBDIRS+=rtemsNfs
-
 # libbspExt supported only on our PPC BSPs
 ifneq ($(filter $(RTEMS_BSP_FAMILY),$(PPCBSPS))xx,xx)
 SUBDIRS+=libbspExt
@@ -115,6 +113,7 @@ ifeq ("$(RTEMS_BSP)","svgm")
 SUBDIRS+=svgmWatchdog
 endif
 
+SUBDIRS+=rtemsNfs
 SUBDIRS+=monitor
 SUBDIRS+=telnetd
 SUBDIRS+=ntpNanoclock
