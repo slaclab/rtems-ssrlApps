@@ -16,8 +16,7 @@ RTEMS_WHICH = 4.6
 RTEMS_TOP = /afs/slac/package/rtems/$(RTEMS_WHICH)
 
 #Where to install, where to grab local packages
-#RTEMS_SITE_DIR = /afs/slac/g/spear/rtemsApplications/$(RTEMS_WHICH)
-RTEMS_SITE_DIR = /tftpboot
+RTEMS_SITE_DIR = /afs/slac/g/spear/rtemsApplications/$(RTEMS_WHICH)
 
 #################################################################
 # There should be no need to change anything below here
