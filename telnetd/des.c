@@ -65,22 +65,56 @@
 #include <string.h>
 #include <crypt.h>
 
+#define REENTRANT
 /* Re-entrantify me -- all this junk needs to be in 
  * struct crypt_data to make this really reentrant... */
-static u_char	inv_key_perm[64];
-static u_char	inv_comp_perm[56];
-static u_char	u_sbox[8][64];
-static u_char	un_pbox[32];
-static u_int32_t en_keysl[16], en_keysr[16];
-static u_int32_t de_keysl[16], de_keysr[16];
-static u_int32_t ip_maskl[8][256], ip_maskr[8][256];
-static u_int32_t fp_maskl[8][256], fp_maskr[8][256];
-static u_int32_t key_perm_maskl[8][128], key_perm_maskr[8][128];
-static u_int32_t comp_maskl[8][128], comp_maskr[8][128];
-static u_int32_t saltbits;
-static u_int32_t old_salt;
-static u_int32_t old_rawkey0, old_rawkey1;
 
+/* TS; not really - only the stuff in Des_Context */
+static struct fixed {
+u_char	inv_key_perm[64];
+u_char	inv_comp_perm[56];
+u_char	u_sbox[8][64];
+u_char	un_pbox[32];
+u_int32_t ip_maskl[8][256], ip_maskr[8][256];
+u_int32_t fp_maskl[8][256], fp_maskr[8][256];
+u_int32_t key_perm_maskl[8][128], key_perm_maskr[8][128];
+u_int32_t comp_maskl[8][128], comp_maskr[8][128];
+} des_f;
+
+#define	inv_key_perm des_f.inv_key_perm
+#define	inv_comp_perm des_f.inv_comp_perm
+#define	u_sbox des_f.u_sbox
+#define	un_pbox des_f.un_pbox
+#define ip_maskl des_f.ip_maskl
+#define ip_maskr des_f.ip_maskr
+#define fp_maskl des_f.fp_maskl
+#define fp_maskr des_f.fp_maskr
+#define key_perm_maskl des_f.key_perm_maskl
+#define key_perm_maskr des_f.key_perm_maskr
+#define comp_maskl des_f.comp_maskl
+#define comp_maskr des_f.comp_maskr
+
+/* These need to be maintained per-process */
+struct Des_Context {
+u_int32_t en_keysl[16], en_keysr[16];
+u_int32_t de_keysl[16], de_keysr[16];
+u_int32_t saltbits;
+u_int32_t old_salt;
+u_int32_t old_rawkey0, old_rawkey1;
+};
+
+#ifndef REENTRANT
+static struct Des_Context single;
+#endif
+
+#define en_keysl des_ctx->en_keysl
+#define en_keysr des_ctx->en_keysr
+#define de_keysl des_ctx->de_keysl
+#define de_keysr des_ctx->de_keysr
+#define saltbits des_ctx->saltbits
+#define old_salt des_ctx->old_salt
+#define old_rawkey0 des_ctx->old_rawkey0
+#define old_rawkey1 des_ctx->old_rawkey1
 
 /* Static stuff that stays resident and doesn't change after 
  * being initialized, and therefore doesn't need to be made 
@@ -214,6 +248,22 @@ ascii_to_bin(char ch)
 	return(0);
 }
 
+struct Des_Context *
+des_ctx_init(void)
+{
+struct Des_Context *des_ctx;
+#ifdef REENTRANT
+	des_ctx = malloc(sizeof(*des_ctx));
+#else
+	des_ctx = &single;
+#endif
+	old_rawkey0 = old_rawkey1 = 0L;
+	saltbits = 0L;
+	old_salt = 0L;
+
+	return des_ctx;
+}
+
 static void
 des_init(void)
 {
@@ -224,9 +274,8 @@ des_init(void)
 	if (des_initialised==1)
 	    return;
 
-	old_rawkey0 = old_rawkey1 = 0L;
-	saltbits = 0L;
-	old_salt = 0L;
+	des_ctx_init();
+
 	bits24 = (bits28 = bits32 + 4) + 4;
 
 	/*
@@ -349,7 +398,7 @@ des_init(void)
 
 
 static void
-setup_salt(long salt)
+setup_salt(long salt, struct Des_Context *des_ctx)
 {
 	u_int32_t	obit, saltbit;
 	int	i;
@@ -371,7 +420,7 @@ setup_salt(long salt)
 
 
 static int
-des_setkey(const char *key)
+des_setkey(const char *key, struct Des_Context *des_ctx)
 {
 	u_int32_t	k0, k1, rawkey0, rawkey1;
 	int		shifts, round;
@@ -451,7 +500,7 @@ des_setkey(const char *key)
 
 
 static int
-do_des(	u_int32_t l_in, u_int32_t r_in, u_int32_t *l_out, u_int32_t *r_out, int count)
+do_des(	u_int32_t l_in, u_int32_t r_in, u_int32_t *l_out, u_int32_t *r_out, int count, struct Des_Context *des_ctx)
 {
 	/*
 	 *	l_in, r_in, l_out, and r_out are in pseudo-"big-endian" format.
@@ -596,6 +645,7 @@ des_cipher(const char *in, char *out, u_int32_t salt, int count)
 #endif
 
 
+#ifndef REENTRANT
 void
 setkey(const char *key)
 {
@@ -611,10 +661,12 @@ setkey(const char *key)
 			if (*key++ & 1)
 				p[i] |= bits8[j];
 	}
-	des_setkey(p);
+	des_setkey(p, &single);
 }
+#endif
 
 
+#ifndef REENTRANT
 void
 encrypt(char *block, int flag)
 {
@@ -624,7 +676,7 @@ encrypt(char *block, int flag)
 
 	des_init();
 
-	setup_salt(0L);
+	setup_salt(0L, &single);
 	p = block;
 	for (i = 0; i < 2; i++) {
 		io[i] = 0L;
@@ -632,20 +684,27 @@ encrypt(char *block, int flag)
 			if (*p++ & 1)
 				io[i] |= bits32[j];
 	}
-	do_des(io[0], io[1], io, io + 1, flag ? -1 : 1);
+	do_des(io[0], io[1], io, io + 1, flag ? -1 : 1, &single);
 	for (i = 0; i < 2; i++)
 		for (j = 0; j < 32; j++)
 			block[(i << 5) | j] = (io[i] & bits32[j]) ? 1 : 0;
 }
 
+#endif
+
 char *
-__des_crypt(const char *key, const char *setting)
+__des_crypt_r(const char *key, const char *setting, char *output, int sz)
 {
+	char *rval = 0;
+	struct Des_Context *des_ctx;
 	u_int32_t	count, salt, l, r0, r1, keybuf[2];
 	u_char		*p, *q;
-	static char	output[21];
+
+	if (sz < 21)
+		return NULL;
 
 	des_init();
+	des_ctx = des_ctx_init();
 
 	/*
 	 * Copy the key, shifting each character up by one bit
@@ -657,8 +716,8 @@ __des_crypt(const char *key, const char *setting)
 		if (*(q - 1))
 			key++;
 	}
-	if (des_setkey((char *)keybuf))
-		return(NULL);
+	if (des_setkey((char *)keybuf, des_ctx))
+		goto bailout;
 
 #if 0
 	if (*setting == _PASSWORD_EFMT1) {
@@ -679,7 +738,7 @@ __des_crypt(const char *key, const char *setting)
 			 * Encrypt the key with itself.
 			 */
 			if (des_cipher((char *)keybuf, (char *)keybuf, 0L, 1))
-				return(NULL);
+				goto bailout;
 			/*
 			 * And XOR with the next 8 characters of the key.
 			 */
@@ -688,7 +747,7 @@ __des_crypt(const char *key, const char *setting)
 				*q++ ^= *key++ << 1;
 
 			if (des_setkey((char *)keybuf))
-				return(NULL);
+				goto bailout;
 		}
 		strncpy(output, setting, 9);
 
@@ -725,12 +784,12 @@ __des_crypt(const char *key, const char *setting)
 
 		p = (u_char *)output + 2;
 	}
-	setup_salt(salt);
+	setup_salt(salt, des_ctx);
 	/*
 	 * Do it.
 	 */
-	if (do_des(0L, 0L, &r0, &r1, (int)count))
-		return(NULL);
+	if (do_des(0L, 0L, &r0, &r1, (int)count, des_ctx))
+		goto bailout;
 	/*
 	 * Now encode the result...
 	 */
@@ -752,6 +811,38 @@ __des_crypt(const char *key, const char *setting)
 	*p++ = ascii64[l & 0x3f];
 	*p = 0;
 
-	return(output);
+	rval = output;
+bailout:
+	free(des_ctx);
+	return rval;
 }
 
+char *
+__des_crypt(const char *key, const char *setting)
+{
+	static char	output[21];
+	return __des_crypt_r(key, setting, output, sizeof(output));
+}
+
+
+#ifdef DEBUG
+
+void
+des_snap(void **pf, void **pd)
+{
+	*pf = malloc(sizeof(struct fixed));
+	memcpy(*pf, &des_f, sizeof(des_f));
+//	*pd = malloc(sizeof(struct Des_Context));
+//	memcpy(*pd, &des_ctx, sizeof(des_ctx));
+}
+
+void
+des_check(void *pf, void *pd)
+{
+	printf("Fixed: do%s differ"/*", Context: do%s differ"*/"\n",
+			memcmp(pf, &des_f, sizeof(des_f)) ? "" : "nt"
+//			,memcmp(pd, &des_ctx, sizeof(des_ctx)) ? "" : "nt"
+			);
+}
+
+#endif
