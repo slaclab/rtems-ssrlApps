@@ -21,3 +21,4 @@
  */
 
 /* #undef TELNETD_DEFAULT_PASSWD */
+#define TELNETD_DEFAULT_PASSWD "tdH/UvyAt6kUM"
