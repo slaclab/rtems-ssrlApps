@@ -23,12 +23,12 @@ ifndef RTEMS_SITE_WHICH
 RTEMS_SITE_WHICH = $(RTEMS_WHICH)
 endif
 
-RTEMS_SITE_MANDIR=/opt/rtems4.6.0CD/doc/man
+RTEMS_SITE_MANDIR=/opt/rtems4.6.2CD/doc/man
 
 
 ifndef RTEMS_TOP
 ###RTEMS_TOP = /afs/slac/package/rtems/$(RTEMS_WHICH)
-RTEMS_TOP = /opt/rtems4.6.0CD
+RTEMS_TOP = /opt/rtems4.6.2CD
 endif
 
 #Where to install/grab SSRL packages
