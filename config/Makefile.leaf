@@ -41,6 +41,10 @@ PGMS=${ARCH}/xxx-your-program.exe ${ARCH}/xxx-your-module.obj
 # UNUSED for loadable modules
 MANAGERS=XXX
 
+ifndef RTEMS_MAKEFILE_PATH
+$(error you need to set the RTEMS_MAKEFILE_PATH environment variable)
+endif
+
 include $(RTEMS_MAKEFILE_PATH)/Makefile.inc
 
 include $(RTEMS_CUSTOM)
