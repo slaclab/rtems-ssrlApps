@@ -43,6 +43,7 @@ extern "C" {
 #include <rtems/bspIo.h>
 #include <rtems/pty.h>
 #include <errno.h>
+#include <sys/socket.h>
 #ifdef __cplusplus
 };
 #endif
@@ -111,6 +112,11 @@ char *  get_pty(int socket) {
 	if (!ptys_initted) return NULL;
 	for (ndx=0;ndx<MAX_PTYS;ndx++) {
 		if (ptys[ndx].socket<0) {
+			struct timeval t;
+			/* set a long polling interval to save CPU time */
+			t.tv_sec=2;
+			t.tv_usec=00000;
+			setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &t, sizeof(t));
 			ptys[ndx].socket=socket;
 			return ptys[ndx].devname;
 		};
@@ -169,6 +175,9 @@ int read_pty(int minor) { /* Characters writed in the client side*/
 	 pty_t			*pty=ptys+minor;
 
 	 count=read(pty->socket,&value,sizeof(value));
+	 if (count<0)
+		return -1;
+
 	 if (count<1) {
 			/* Unfortunately, there is no way of passing an EOF
 			 * condition through the termios driver. Hence, we
@@ -180,6 +189,7 @@ int read_pty(int minor) { /* Characters writed in the client side*/
 			pty->ttyp->cindex=pty->ttyp->ccount+1;
 			return pty->ttyp->termios.c_cc[VEOF];
 	 };
+
 	 omod=pty->iac_mode;
 	 pty->iac_mode=0;
 	 switch(omod & 0xff) {
@@ -286,12 +296,14 @@ int read_pty(int minor) { /* Characters writed in the client side*/
 							 return -1;
 					 } else {
 							 result=value;  
-							 if ((value=='\n') && (pty->last_cr)) result=-1;
+							 if (
+									((value=='\n') && (pty->last_cr))
+								 || (value==0) /* my telnet client sends '\n' '\0' if telnet crlf option is not enabled ??? */
+								) result=-1;
 							 pty->last_cr=(value=='\r');
 							 return result;
 					 };
 	 };
-	
 }
 
 /*-----------------------------------------------------------*/
