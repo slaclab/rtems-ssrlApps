@@ -23,35 +23,39 @@
 #  be re-run, which is achieved by the 'distclean'
 #  cycle.)
 
-
-#default target.
+########################################################
+# STUFF THAT MUST BE AT THE TOP
 #
-# Since some apps/libs depend on others, an
-# app/lib is always build _and_ installed
-# for the subsequent build of the next app/lib
-# finding all prerequisites.
-#    
-install:
-
-all: error
-
-# save some host tool values
+# save some host tool values before including
+# the cross definitions
 HOSTCC:=$(CC)
 HOSTLD:=$(LD)
+# GNU configure wants this
 CC_FOR_BUILD = $(HOSTCC)
 export CC_FOR_BUILD
-
+#
 include $(RTEMS_MAKEFILE_PATH)/Makefile.inc
 # we want RTEMS_BSP_FAMILY and RTEMS_CPU now
 include $(RTEMS_CUSTOM)
-
+#
 export RTEMS_MAKEFILE_PATH
-
-BUILDEXT  = $(RTEMS_CPU)-build
-
-BUILDDIRS = $(filter %.$(BUILDEXT),$(SUBDIRS))
-
+#
+# BSP families we know they are PPC
 PPCBSPS=motorola_powerpc svgm 
+#
+#
+# END OF STUFF THAT MUST BE AT THE TOP
+########################################################
+
+# Default target.
+#
+# Since some apps/libs depend on others, an
+# app/lib is always build _and_ installed
+# so the subsequent build of the next app/lib
+# finds all prerequisites.
+#    
+# refuse the 'all' target
+all: error
 
 #
 # Applications which need to be 'autoconf'ed
@@ -94,12 +98,10 @@ AUTOCONFSUBDIRS+=cexp
 # should be added below
 #
 
-# make ours first
-# DONT ADD APPLICATION SUBDIRECTORIES HERE
-SUBDIRS+=$(subst distclean-recursive,.,$(filter distclean-recursive,$@))
-SUBDIRS+=$(subst clean-recursive,.,$(filter clean-recursive,$@))
-# ADD APPLICATION SUBDIRECTORIES BELOW HERE
+#SUBDIRS+=$(subst clean-recursive,.,$(filter clean-recursive,$@))
+
 SUBDIRS+=rtemsNfs
+
 # libbspExt supported only on our PPC BSPs
 ifneq ($(filter $(RTEMS_BSP_FAMILY),$(PPCBSPS))xx,xx)
 SUBDIRS+=libbspExt
@@ -112,9 +114,11 @@ SUBDIRS+=cexp.$(BUILDEXT)
 ifeq ("$(RTEMS_BSP)","svgm")
 SUBDIRS+=svgmWatchdog
 endif
+
 SUBDIRS+=monitor
 SUBDIRS+=telnetd
 SUBDIRS+=system
+
 ifeq ("$(RTEMS_BSP)","svgm")
 SUBDIRS+=netboot
 endif
@@ -128,43 +132,50 @@ INSTSUBDIRS+=/$(RTEMS_BSP)/img
 
 INSTDIRS = $(addprefix $(RTEMS_SITE_INSTALLDIR),$(INSTSUBDIRS))
 
-# Need this rule prior to including the distclean: distclean-recursive
-# dependency, so we can mock up a dummy Makefile just for the recursion
-clean-recursive \
-distclean-recursive: $(addsuffix /Makefile,$(BUILDDIRS))
+BUILDEXT  = $(RTEMS_CPU)-build
 
+BUILDDIRS = $(filter %.$(BUILDEXT),$(SUBDIRS))
 
-all: error
+# we simply delete these, no need to recurse into the build
+# directories
+distclean: SUBDIRS=$(filter-out %.$(BUILDEXT),$(SUBDIRS))
+
+# only cleanup existing build directories
+clean: SUBDIRS=$(foreach dir,$(SUBDIRS),$(wildcard $(dir)))
 
 error:
 	@echo
-	@echo YOU MUST USE THE 'install' TARGET FROM THIS DIRECTORY
+	@echo 'YOU MUST USE AN EXPLICIT TARGET FROM THIS DIRECTORY'
+	@echo 
+	@echo 'Valid targets are:'
+	@echo 
+	@echo '    prep      - (re)create "configure" & friends after CVS checkout'
+	@echo '    install   - configure, build and install everything to'
+	@echo '                "$(RTEMS_SITE_INSTALLDIR)"'
+	@echo '    clean     - remove target objects'
+	@echo '    distclean - remove target objects AND host configuration'
 	@echo
+	@echo 'NOTES: - you must "gmake distclean" when switching to a different host machine'
+	@echo '       - need for "prep" ONLY after CVS checkout'
+	@echo 
 	exit 1
 
 prep: CC=$(HOSTCC)
 prep: LD=$(HOSTLD)
 
 prep:
-	for dir in $(AUTOCONFSUBDIRS); do $(MAKE) -C $$dir $@; done
+	for dir in $(AUTOCONFSUBDIRS); do $(MAKE) -C $$dir tools_prefix=$(tools_prefix) $@; done
 
 include $(RTEMS_ROOT)/make/directory.cfg
 include $(CONFIG.CC)
 
-install: $(INSTDIRS) $(SUBDIRS)
+install: $(INSTDIRS) $(BUILDDIRS:%=%/Makefile)
 
 CLOBBER_ADDITIONS+=$(BUILDDIRS)
 
-###preinstall-recursive: $(INSTDIRS) $(SUBDIRS)
-
 %.$(BUILDEXT)/Makefile:
-	test -d $(dir $@) || mkdir $(dir $@)
-	echo distclean: > $@
-	echo clean: >> $@
-
-%.$(BUILDEXT): %
-	test -d $@ || $(MKDIR) $@
-	cd	$@ ; ../$^/configure --build=`../$^/config.guess` --host=$(RTEMS_CPU)-rtems --disable-nls --prefix=$(RTEMS_SITE_INSTALLDIR) --with-newlib CC=$(word 1,$(CC))
+	test -d $(dir $@) || $(MKDIR) $(dir $@)
+	cd	$(dir $@) ; ../$(@:%.$(BUILDEXT)/Makefile=%)/configure --build=`../$(@:%.$(BUILDEXT)/Makefile=%)/config.guess` --host=$(RTEMS_CPU)-rtems --disable-nls --prefix=$(RTEMS_SITE_INSTALLDIR) --with-newlib CC=$(word 1,$(CC))
 
 $(INSTDIRS):
-	mkdir -p $@
+	$(MKDIR) -p $@
