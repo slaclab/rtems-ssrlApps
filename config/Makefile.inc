@@ -64,7 +64,7 @@ define make-tar
         exit 1;\
     else \
         echo tarring revision $(REVISION);\
-        tar cfz $(if $(wildcard tarexcl),x tarexcl) $(REVISION).tgz -C .. $(shell basename `pwd`) ;\
+        tar cfz $(if $(wildcard tarexcl),x tarexcl) $(REVISION).tgz --exclude $(REVISION).tgz -C .. $(shell basename `pwd`) ;\
     fi
 endef
 
