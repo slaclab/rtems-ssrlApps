@@ -219,6 +219,10 @@ int		i,num_new_commons=0,errs=0,modind;
 		ts=tstSymLookup(bfd_asymbol_name(sp), &modind);
 
 		if (bfd_is_und_section(sect)) {
+printf("TSILL undef (value 0x%08x, flags 0x%08x): %s\n",
+				bfd_asymbol_value(sp),
+				sp->flags,
+				bfd_asymbol_name(sp));
 			if (ts) {
 				/* Resolved reference; replace the symbol pointer
 				 * in this slot with a new asymbol holding the
@@ -394,6 +398,7 @@ long			num_new_commons;
 static int
 flushCache(LinkData ld)
 {
+#if defined(_ARCH_PPC) || defined(__PPC__) || defined(__PPC) || defined(PPC)
 int i,j;
 	for (i=0; i<NUM_SEGS; i++) {
 		for (j=0; j<= ld->segs[i].size; j+=CACHE_LINE_SIZE)
@@ -404,6 +409,7 @@ int i,j;
 	}
 	/* enforce flush completion and discard preloaded instructions */
 	__asm__ __volatile__("sync; isync");
+#endif
 }
 
 #if 0

@@ -2,7 +2,7 @@
 # However, different versions of libopcodes don't grok different versions'
 # header :-(. Therefore, we must provide a consistent set of library / header
 # paths...
-BINUTILS=/home/till/binutils-2.11.1
+BINUTILS=/home/till/gnu/binutils-2.11.1
 #ARCH=build-i386-linux
 ARCH=build-ppc-linux
 DEBUG=DEBUG
