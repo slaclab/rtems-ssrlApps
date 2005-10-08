@@ -7,9 +7,9 @@
 
 #### CD specific settings
 #set version
-RTEMS_WHICH        = 4.6.2
+RTEMS_WHICH        = 4.6.2-devel
 # define a variable for the CD topdir
-RTEMS_CD_TOP       = /opt/rtems$(RTEMS_WHICH)CD
+RTEMS_CD_TOP       = /afs/slac/package/rtems/$(RTEMS_WHICH)
 #where to pick up RTEMS (installation)
 RTEMS_TOP          = $(RTEMS_CD_TOP)/target
 #where to pick up the toolchain; RTEMS_BASE is also used by EPICS
@@ -25,7 +25,7 @@ RTEMS_BASE         = $(RTEMS_CD_TOP)/host/$(RTEMS_HOST_ARCH)
 #      RTEMS_SITE_DIR     -- user installation top
 #
 #where to install ssrl applications (into the 'target' area)
-RTEMS_SSRLAPPS_DIR = $(RTEMS_TOP)/ssrlApps
+RTEMS_SSRLAPPS_DIR = $(RTEMS_TOP)/ssrlApps-test
 #where to install documentation 
 RTEMS_SITE_DOCDIR  = $(RTEMS_CD_TOP)/doc
 

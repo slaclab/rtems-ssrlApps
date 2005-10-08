@@ -44,7 +44,7 @@ include $(RTEMS_CUSTOM)
 export RTEMS_MAKEFILE_PATH
 #
 # BSP families we know they are PPC
-PPCBSPS=motorola_powerpc svgm 
+PPCBSPS=motorola_powerpc svgm mvme5500 mot_ppc_new
 #
 #
 # END OF STUFF THAT MUST BE AT THE TOP
@@ -123,7 +123,7 @@ SUBDIRS+=telnetd
 SUBDIRS+=ntpNanoclock
 SUBDIRS+=system
 
-ifeq ("$(RTEMS_BSP)","svgm")
+ifneq ($(filter $(RTEMS_BSP),svgm mvme5500)xx,xx)
 SUBDIRS+=netboot
 endif
 
@@ -180,7 +180,7 @@ install-config: $(RTEMS_SITE_DIR)
 install: $(INSTDIRS) $(BUILDDIRS:%=%/Makefile) install-config
 
 # How to make a tarball of this package
-REVISION=$(filter-out $$%,$SSRL_RTEMS_20041202$)
+REVISION=$(filter-out $$%,$$Name$$)
 tar:
 	@$(make-tar)
 
