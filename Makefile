@@ -123,7 +123,7 @@ SUBDIRS+=telnetd
 SUBDIRS+=ntpNanoclock
 SUBDIRS+=system
 
-ifneq ($(filter $(RTEMS_BSP),svgm mvme5500)xx,xx)
+ifneq ($(filter $(RTEMS_BSP),svgm mvme5500 mvme6100)xx,xx)
 SUBDIRS+=netboot
 endif
 
