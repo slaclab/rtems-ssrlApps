@@ -41,7 +41,11 @@ extern "C" {
 #include <rtems/libio.h>
 #include <bsp.h>
 #include <rtems/bspIo.h>
+#if 0
 #include <rtems/pty.h>
+#else
+#define MAX_PTYS 8
+#endif
 #include <errno.h>
 #include <sys/socket.h>
 #ifdef __cplusplus
@@ -316,6 +320,8 @@ static int read_pty(int minor) { /* Characters written to the client side*/
 							 return result;
 					 };
 	 };
+	/* should never get here but keep compiler happy */
+	return -1;
 }
 
 /*-----------------------------------------------------------*/
@@ -407,7 +413,7 @@ ptyPollRead(int minor) {
  */
 /*-----------------------------------------------------------*/
 static
-rtems_device_driver pty_initialize(
+rtems_device_driver my_pty_initialize(
   rtems_device_major_number  major,
   rtems_device_minor_number  minor,
   void                      *arg
@@ -486,7 +492,7 @@ rtems_status_code status;
  */
 
 static
-rtems_device_driver pty_open(
+rtems_device_driver my_pty_open(
   rtems_device_major_number major,
   rtems_device_minor_number minor,
   void                    * arg
@@ -502,7 +508,7 @@ rtems_device_driver pty_open(
  */
 
 static
-rtems_device_driver pty_close(
+rtems_device_driver my_pty_close(
   rtems_device_major_number major,
   rtems_device_minor_number minor,
   void                    * arg
@@ -516,7 +522,7 @@ rtems_device_driver pty_close(
  */
 
 static
-rtems_device_driver pty_read(
+rtems_device_driver my_pty_read(
   rtems_device_major_number major,
   rtems_device_minor_number minor,
   void                    * arg
@@ -530,7 +536,7 @@ rtems_device_driver pty_read(
  */
 
 static
-rtems_device_driver pty_write(
+rtems_device_driver my_pty_write(
   rtems_device_major_number major,
   rtems_device_minor_number minor,
   void                    * arg
@@ -544,7 +550,7 @@ rtems_device_driver pty_write(
  */
 
 static
-rtems_device_driver pty_control(
+rtems_device_driver my_pty_control(
   rtems_device_major_number major,
   rtems_device_minor_number minor,
   void                    * arg
@@ -593,12 +599,12 @@ pty_t					 *p=&telnet_ptys[minor];
 }
 
 static rtems_driver_address_table drvPty = {
-		pty_initialize,
-		pty_open,
-		pty_close,
-		pty_read,
-		pty_write,
-		pty_control
+		my_pty_initialize,
+		my_pty_open,
+		my_pty_close,
+		my_pty_read,
+		my_pty_write,
+		my_pty_control
 };
 
 /*-----------------------------------------------------------*/

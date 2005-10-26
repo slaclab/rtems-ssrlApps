@@ -60,6 +60,8 @@ struct shell_args {
 
 static int sockpeername(int sock, char *buf, int bufsz);
 
+static int initialize_telnetd();
+
 /***********************************************************/
 rtems_id            telnetd_task_id      =0;
 rtems_unsigned32    telnetd_stack_size   =32000;
@@ -70,9 +72,9 @@ void				*telnetd_shell_arg	 =0;
 
 static char *grab_a_Connection(int des_socket, struct sockaddr_in *srv, char *peername, int sz)
 {
-char	*rval = 0;
-int		size_adr = sizeof(*srv);
-int		acp_sock;
+char		*rval = 0;
+socklen_t	size_adr = sizeof(*srv);
+int			acp_sock;
 
 	acp_sock = accept(des_socket,(struct sockaddr*)srv,&size_adr);
 
@@ -103,7 +105,7 @@ bailout:
 }
 
 
-static void release_a_Connection(char *devname, char *peername, FILE **std, int n)
+static void release_a_Connection(char *devname, char *peername, FILE **pstd, int n)
 {
 
 #ifdef PARANOIA
@@ -114,16 +116,16 @@ static void release_a_Connection(char *devname, char *peername, FILE **std, int 
 #endif
 
 	while (--n>=0)
-		if (std[n]) fclose(std[n]);
+		if (pstd[n]) fclose(pstd[n]);
 
 }
 
 static int sockpeername(int sock, char *buf, int bufsz)
 {
 struct sockaddr_in peer;
-int len  = sizeof(peer);
+socklen_t len  = sizeof(peer);
 
-int rval = sock < 0;
+int       rval = sock < 0;
 
 	if ( !rval)
 		rval = getpeername(sock, (struct sockaddr*)&peer, &len);
@@ -249,7 +251,7 @@ struct shell_args	*arg;
 	rtems_task_delete(RTEMS_SELF);
 }
 /***********************************************************/
-static int rtems_initialize_telnetd(void) {
+static int initialize_telnetd(void) {
 	rtems_status_code sc;
 	
 	if (telnetd_task_id         ) return RTEMS_RESOURCE_IN_USE;
@@ -303,7 +305,7 @@ int startTelnetd(void (*cmd)(char *, void *), void *arg, int dontSpawn, int stac
 	telnetd_task_priority = priority;
 	telnetd_dont_spawn    = dontSpawn;
 
-	sc=rtems_initialize_telnetd();
+	sc=initialize_telnetd();
         if (sc!=RTEMS_SUCCESSFUL) return sc;
 	printf("rtems_telnetd() started with stacksize=%u,priority=%d\n",
                         telnetd_stack_size,telnetd_task_priority);
@@ -315,12 +317,20 @@ static rtems_task
 spawned_shell(rtems_task_argument targ)
 {
 rtems_status_code	sc;
-FILE				*std[3]={0};
+FILE				*nstd[3]={0};
 FILE				*ostd[3]={ stdin, stdout, stderr };
 int					i=0;
 struct shell_args	*arg = (struct shell_args *)targ;
 
 	sc=rtems_libio_set_private_env();
+
+	/* newlib hack/workaround. Before we change stdin/out/err we must make
+         * sure the internal data are initialized (fileno(stdout) has this sideeffect).
+	 * This should probably be done from RTEMS' libc support layer...
+	 * (T.S., newlibc-1.13; 2005/10)
+         */
+
+	fileno(stdout);
 
 	if (RTEMS_SUCCESSFUL != sc) {
 		rtems_error(sc,"rtems_libio_set_private_env");
@@ -329,15 +339,23 @@ struct shell_args	*arg = (struct shell_args *)targ;
 
 	/* redirect stdio */
 	for (i=0; i<3; i++) {
-		if ( !(std[i]=fopen(arg->devname,"r+")) ) {
+		if ( !(nstd[i]=fopen(arg->devname,"r+")) ) {
 			perror("unable to open stdio");
 			goto cleanup;
 		}
 	}
 
-	stdin  = std[0];
-	stdout = std[1];
-	stderr = std[2];
+	stdin  = nstd[0];
+	stdout = nstd[1];
+	stderr = nstd[2];
+
+
+
+#if 0
+printk("STDOUT is now %x (%x) (FD %i/%i)\n",stdout,nstd[1],fileno(stdout),fileno(nstd[1]));
+printf("hello\n");
+write(fileno(stdout),"hellofd\n",8);
+#endif
 
 	/* call their routine */
 	if ( 0 == check_passwd(arg->peername) )
@@ -348,7 +366,7 @@ struct shell_args	*arg = (struct shell_args *)targ;
 	stderr = ostd[2];
 
 cleanup:
-	release_a_Connection(arg->devname, arg->peername, std, i);
+	release_a_Connection(arg->devname, arg->peername, nstd, i);
 	free(arg);
 	rtems_task_delete(RTEMS_SELF);
 }
