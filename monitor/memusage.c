@@ -5,6 +5,22 @@
 //#include <rtems/score/thread.h>
 #include <stdio.h>
 
+#include <rtems/system.h>
+
+#define ISMINVERSION(ma,mi,re) \
+	(    __RTEMS_MAJOR__  > (ma)	\
+	 || (__RTEMS_MAJOR__ == (ma) && __RTEMS_MINOR__  > (mi))	\
+	 || (__RTEMS_MAJOR__ == (ma) && __RTEMS_MINOR__ == (mi) && __RTEMS_REVISION__ >= (re)) \
+    )
+
+#if ISMINVERSION(4,6,99)
+#define hi_free	Free.total
+#define hi_used	Used.total
+#else
+#define hi_free	free_size
+#define hi_used	used_size
+#endif
+
 int
 memUsageDump(int doit)
 {
@@ -28,7 +44,7 @@ int	rval, heapsz;
 		fprintf(stderr,"ERROR: unable to retrieve RTEMS workspace info\n");
 	} else {
 		printf("Workspace usage: free %ib, used %ib, configured size %ib\n",
-				info.free_size, info.used_size, _Configuration_Table->work_space_size);
+				info.hi_free, info.hi_used, _Configuration_Table->work_space_size);
 	}
 
 	heapsz = malloc_free_space();

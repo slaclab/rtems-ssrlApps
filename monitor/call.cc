@@ -21,7 +21,7 @@ int
 memUsageDump(void);
 
 static void
-fnwrap(int argc, char **argv, unsigned32 arg, boolean verbose)
+fnwrap(int argc, char **argv, rtems_monitor_command_arg_t *arg, boolean verbose)
 {
 unsigned long	iarg;
 char			*endp;
@@ -36,49 +36,56 @@ if ( argc > 0 ) {
 	} else {
 		iarg=0;
 	}
-	((void (*)(unsigned long))arg)(iarg);
+	((void (*)(unsigned long))arg->symbol_table)(iarg);
 } else {
 		fprintf(stderr,"no args\n");
-	((void (*)(void))arg)();
+	((void (*)(void))arg->symbol_table)();
 }
 }
 
 #define NUMBEROF(arr) (sizeof(arr)/sizeof(arr[0]))
 
+class command_entry_builder : public rtems_monitor_command_entry_t {
+public:
+	command_entry_builder(
+		char *name, char *help, unsigned args_req, 
+		void *fp)
+		{
+		command                  = name;
+		usage                    = help;
+		arguments_required       = args_req;
+		command_function         = (rtems_monitor_command_function_t)fnwrap;
+		command_arg.symbol_table = (rtems_symbol_table_t**)fp;
+		next                     = 0;
+		}
+};
+
 static
 rtems_monitor_command_entry_t entries[] = {
-	{
+	command_entry_builder(
 		"cpuUsageDump",
 		"cpuUsageDump",
 		0,
-		fnwrap,
-		(unsigned32)CPU_usage_Dump,
-		0
-	},
-	{
+		(void*)CPU_usage_Dump
+	),
+	command_entry_builder(
 		"cpuUsageReset",
 		"cpuUsageReset",
 		0,
-		fnwrap,
-		(unsigned32)CPU_usage_Reset,
-		0
-	},
-	{
+		(void*)CPU_usage_Reset
+	),
+	command_entry_builder(
 		"threadStack",
 		"threadStack [taskId]; give stacktrace of a task (0 for self)",
 		1,
-		fnwrap,
-		(unsigned32)taskStack,
-		0
-	},
-	{
+		(void*)taskStack
+	),
+	command_entry_builder(
 		"memUsageDump",
 		"memUsageDump; show used/free amount of RTEMS workspace and malloc heap",
 		1,
-		fnwrap,
-		(unsigned32)memUsageDump,
-		0
-	},
+		(void*)memUsageDump
+	)
 };
 
 int
@@ -136,7 +143,7 @@ char	*line,*buf=0;
 						rtems_monitor_commands,
 						argc,
 						argv)))
-        	cmd->command_function(argc, argv, cmd->command_arg, verbose);
+        	cmd->command_function(argc, argv, &cmd->command_arg, verbose);
 		else {
 			fprintf(stderr,"Command '%s' not found\n",argv[0]);
 		}
