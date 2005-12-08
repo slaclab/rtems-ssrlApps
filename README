@@ -3,7 +3,7 @@ $Id$
 
 Till Straumann, 2003/4/10
 
-To build the software under 'rtemsApplications'
+To build the software under 'ssrlApps'
 from scratch, the following steps are necessary:
 
  0. Quick instructions for the impatient
@@ -22,24 +22,20 @@ host-tools, 'xsyms' and 'ldep' are needed. These
 utilites must be checked out from CVS (modules 'xsyms'
 and 'ldep', respectively), built and installed
 in a place where they can be found, prior to building
-the rtemsApplications.
+the ssrlApps. ('xsyms' is optional if the symbol
+table is built/compiled into the system application. This
+is now the default.)
 
 0. Quick instructions for the impatient
 =======================================
 
-  - cvs checkout rtemsApplications
-  - chdir rtemsApplications
-  - create symbolic links from
-        cexp/regexp          -> <target>/regexp
-    where 'target' is the source directory of an already
-    checked-out version of CEXP. Alternatively, you can
-    download/extract the cexp package and copy/link the library
-    sources. This step is necessary because these third-party
-    libraries are currently not in the SSRL CVS repository.
+  - cvs checkout ssrlApps
+  - chdir ssrlApps
   - edit config/Makefile.inc, set RTEMS_BSP, RTEMS_TOP
     and RTEMS_SITE_DIR
   - setenv RTEMS_MAKEFILE_PATH `pwd`/config
-  - gmake prep
+  - gmake prep 	(only needed after CVS checkout; not needed
+    if working with a tarball or CD image)
   - gmake install
 
   - to cleanup, it may be necessary to manually remove the
@@ -55,19 +51,7 @@ individual packages although some of them are in fact 'libraries')
 are maintained in CVS as a 'module', i.e. you can check out all
 the applications with:
 
-   cvs checkout rtemsApplications
-
-Because some third-party libraries are currently not in the
-SSRL CVS repository it is necessary to manually create a couple
-of symlinks:
-
-create symbolic links from
-        cexp/regexp          -> <target>/regexp
-
-where 'target' is the source directory of an already
-checked-out version of CEXP. Alternatively, you can
-download/extract the cexp package and copy/link the library
-sources.
+   cvs checkout ssrlApps
 
 2. Tune config/Makefile.inc
 ===========================
@@ -96,12 +80,12 @@ Mainly, there are a few variables of interest in Makefile.inc
    The name 'RTEMS_BASE' is somewhat unfortunate but since EPICS
    uses it, we inherit it...
 
- - RTEMS_SITE_DIR defines a path under which the rtemsApplications
+ - RTEMS_SITE_DIR defines a path under which the ssrlApps
    will be installed. Also, 'include' and 'lib' directories
-   are searched for headers and libraries when building 'rtemsApplications'.
+   are searched for headers and libraries when building 'ssrlApps'.
 
    The idea is that you can point RTEMS_SITE_DIR to any place of
-   your convenience, build 'rtemsApplications' and you end up
+   your convenience, build 'ssrlApps' and you end up
    with an independent copy.
 
    Make sure RTEMS_SITE_DIR is always set - some packages might
@@ -113,7 +97,7 @@ Mainly, there are a few variables of interest in Makefile.inc
    RTEMS release. Building EPICS software transparently results
    in using the correct tools and finding libraries / headers
    installed in RTEMS_SITE_DIR (due to the paths defined in
-   the 'rtemsApplications/config/xxx' files)
+   the 'ssrlApps/config/xxx' files)
 
  3. Create 'configure' scripts in some source directories
 =========================================================
@@ -124,7 +108,7 @@ There are essentially two flavors of applications:
    Makefile system. README documents in the
      <rtems_installation>/make
    and
-     rtemsApplications/config 
+     ssrlApps/config 
    directories provide more information about these
    Makefiles.
    'telnetd' is an example for the first kind of package.
@@ -156,11 +140,15 @@ There are essentially two flavors of applications:
    onfiguration E.g.:
      'configure --host=powerpc-rtems'
    executed on a solaris machine configures a package for
-   a powerpc-rtems target on a (autodetected) solaris host.
+   a powerpc-rtems host on a (autodetected) solaris build host.
    'configure' interprets the term 'host' as the system
    the package is intended to _run_ on, not the one it is
    built on. The latter can be specified with the '--build=xxx'
    option which is usually omitted (=autodetect).
+   (The '--target' architecture is used for 'cross-tools', i.e.,
+   it specifies the architecture of the system the tool should
+   operate on. E.g., in case of a cross-compiler, what machine
+   it should emit code for.
    --- sidenote end ---
 
    The 'automake', 'autoconf' etc. suite of tools takes
@@ -183,22 +171,22 @@ There are essentially two flavors of applications:
 
    One nice feature of 'configure' is the support for building
    software in a subdirectory outside of the source tree.
-   The top-level Makefile of the 'rtemsApplications' uses this 
+   The top-level Makefile of the 'ssrlApps' uses this 
    feature and assumes that the package comes with a 'Makefile'
    in its top directory which performs the necessary 'autoxxx'
    steps.
    The 'real', Makefiles are created by 'configure'
    in a special 'build' directory, _outside_ of the package
    source.
-   The top-level Makefile (i.e. rtemsApplications/Makefile) has
+   The top-level Makefile (i.e. ssrlApps/Makefile) has
    a 'prep' target which recurses into all 'autoconf' supporting
    package source directories and invokes their 'Makefile'
    which in turn generates the 'configure' scripts.
 
    E.g.
 
-     1. checkout  --> package source into 'rtemsApplications/xxx'
-     2. chdir rtemsApplications
+     1. checkout  --> package source into 'ssrlApps/xxx'
+     2. chdir ssrlApps
      3. setenv RTEMS_MAKEFILE_PATH `pwd`/config
      2. gmake prep --> autotools invoked in 'xxx' generate 'xxx/configure'
 
@@ -212,7 +200,7 @@ There are essentially two flavors of applications:
  4. Build and install the software
 ==================================
 
-The top-level Makefile in rtemsApplications iterates through the
+The top-level Makefile in ssrlApps iterates through the
 list of subdirectories and runs 'configure' in the 'xxx-build'
 subdirectories.
 During a second iteration, the individual packages are build and
@@ -221,7 +209,7 @@ packages depend on others and require their headers/libraries
 being available under RTEMS_SITE_DIR as a build prerequisite.
 
 Prior to using any of the Makefiles, the environment variable
-RTEMS_MAKEFILE_PATH must be pointed to the 'rtemsApplications/config'
+RTEMS_MAKEFILE_PATH must be pointed to the 'ssrlApps/config'
 directory.
 
 Individual packages can be rebuilt in their respective subdirectory
@@ -234,15 +222,15 @@ RTEMS_SITE_DIR area.
 built targets (objects, libraries etc.), the former (implying 'clean')
 also removes the files generated by 'configure'. Because 'configure'
 always generates makefiles for a specific host system, it is necessary
-to 'gmake distclean' in the rtemsApplications top directory when switching
+to 'gmake distclean' in the ssrlApps top directory when switching
 from one host architecture to another.
 
-linux>  chdir rtemsApplications
+linux>  chdir ssrlApps
 linux>  gmake install
 
 --> 'configure' generates linux-specific Makefiles in cexp.powerpc-build
 
-solaris> chdir rtemsApplications
+solaris> chdir ssrlApps
 solaris> gmake distclean
 
 --> all xxx.<target-arch>-build directories are removed
