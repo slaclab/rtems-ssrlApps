@@ -10,6 +10,34 @@ C_PIECES=vec_context vec_alloc
 C_FILES=$(C_PIECES:%=%.c)
 C_O_FILES=$(C_PIECES:%=${ARCH}/%.o)
 
+# Notes about compiler flags:
+#
+# -mno-altivec
+#   Compile *without* altivec to avoid implicit use of
+#   Vector registers by the compiler.
+#   All access to the vector unit is by means of inline assembly.
+#
+# -mabi=altivec
+#   Ensures proper (16byte) stack alignment. Note that
+#   *every* single file linked to the application must
+#   be compiled with -mabi=altivec (-mno-eabi should have
+#   the same effect as far as stack alignment is concerned.
+#   I don't know of any other effects -mabi=altivec has).
+#
+# -mvrsave=no
+#   All code should be compiled with -mvrsave=no. The
+#   altivec support doesn't use vrsave, i.e., always
+#   switches all VRs -- the performance gained by honouring
+#   vrsave seems to be extremely marginal (7450).
+#   Since it's not used by the system, the compiler
+#   shouldn't generate overhead code to maintain vrsave
+#   and this is accomplished by choosing this option).
+#
+# NOTE: If you DO want the compiler to maintain vrsave
+#   then both, -mabi=altivec and -mvsave=yes are needed.
+#
+VEC_CFLAGS=-mno-altivec -mabi=altivec -mvrsave=no
+
 # C++ source names, if any, go here -- minus the .cc
 CC_PIECES=
 CC_FILES=$(CC_PIECES:%=%.cc)
@@ -56,7 +84,7 @@ include $(RTEMS_ROOT)/make/leaf.cfg
 
 DEFINES  +=
 CPPFLAGS +=
-CFLAGS   +=
+CFLAGS   += $(VEC_CFLAGS)
 
 #
 # CFLAGS_DEBUG_V are used when the `make debug' target is built.
