@@ -43,10 +43,6 @@ include $(RTEMS_CUSTOM)
 #
 export RTEMS_MAKEFILE_PATH
 #
-# BSP families we know they are PPC
-PPCBSPS=motorola_powerpc svgm mvme5500 mot_ppc_new
-#
-#
 # END OF STUFF THAT MUST BE AT THE TOP
 ########################################################
 
@@ -104,8 +100,12 @@ AUTOCONFSUBDIRS+=cexp
 #SUBDIRS+=$(subst clean-recursive,.,$(filter clean-recursive,$@))
 
 # libbspExt supported only on our PPC BSPs
-ifneq ($(filter $(RTEMS_BSP_FAMILY),$(PPCBSPS))xx,xx)
+ifeq ($(RTEMS_CPU),powerpc)
 SUBDIRS+=libbspExt
+SUBDIRS+=altivec
+endif
+
+ifneq ($(filter $(RTEMS_CPU),powerpc i386)xx,xx)
 SUBDIRS+=rtems-gdb-stub
 endif
 
