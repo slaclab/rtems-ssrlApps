@@ -84,7 +84,12 @@ include $(RTEMS_ROOT)/make/leaf.cfg
 
 DEFINES  +=
 CPPFLAGS +=
-CFLAGS   += $(VEC_CFLAGS)
+CFLAGS   += 
+# currently, they add CPU_CFLAGS to CPPFLAGS and not CFLAGS.
+# COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS)
+# -> if we want VEC_CFLAGS to be last, we have to either
+# append it to CPPFLAGS or CPU_CFLAGS...
+CPU_CFLAGS += $(VEC_CFLAGS)
 
 #
 # CFLAGS_DEBUG_V are used when the `make debug' target is built.
