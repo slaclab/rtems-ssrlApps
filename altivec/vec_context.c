@@ -174,6 +174,9 @@ _Thread_Disable_dispatch();
 	BPTR(paligned) = p;
 #endif
 _Thread_Enable_dispatch();
+#ifndef USE_ALLOCATE_ALIGNED /* _Heap_Allocate_aligned is broken */
+	assert( paligned >= p && ! (paligned & 31) );
+#endif
 	return paligned;
 }
 
