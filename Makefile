@@ -121,11 +121,12 @@ SUBDIRS+=rtemsNfs
 SUBDIRS+=monitor
 SUBDIRS+=telnetd
 SUBDIRS+=ntpNanoclock
-SUBDIRS+=system
 
 ifneq ($(filter $(RTEMS_BSP),svgm beatnik)xx,xx)
 SUBDIRS+=netboot
 endif
+
+SUBDIRS+=system
 
 INSTSUBDIRS+=/bin
 INSTSUBDIRS+=/include
