@@ -175,7 +175,7 @@ _Thread_Disable_dispatch();
 #endif
 _Thread_Enable_dispatch();
 #ifndef USE_ALLOCATE_ALIGNED /* _Heap_Allocate_aligned is broken */
-	assert( paligned >= p && ! (paligned & 31) );
+	assert( paligned >= p && ! ((uint32_t)paligned & 31) );
 #endif
 	return paligned;
 }
@@ -221,6 +221,11 @@ vec_install_extension()
 {
 unsigned          pvr;
 rtems_status_code sc;
+
+	if ( vec_extension_id ) {
+		printk(NAM": AltiVec extension already installed\n");
+		return -1;
+	}
 
 /* VRSAVE currently unused */
 	if ( 0xffffffff != vrsave_init_val ) {
