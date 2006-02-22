@@ -158,6 +158,13 @@ clr_MSR_VE()
 	isync();
 }
 
+static inline void
+rst_MSR_VE(uint32_t old)
+{
+	dssall();
+	mtmsr(old);
+	isync();
+}
 
 STATIC VecCtxt extalloc()
 {
@@ -175,7 +182,7 @@ _Thread_Disable_dispatch();
 #endif
 _Thread_Enable_dispatch();
 #ifndef USE_ALLOCATE_ALIGNED /* _Heap_Allocate_aligned is broken */
-	assert( paligned >= p && ! ((uint32_t)paligned & 31) );
+	assert( (uint32_t)paligned >= p && ! ((uint32_t)paligned & 31) );
 #endif
 	return paligned;
 }
@@ -541,7 +548,7 @@ vec_thread_switch(rtems_tcb *executing, rtems_tcb *heir)
 VecCtxt vp = get_tcp(heir);
 	dssall();
 	if ( vp && heir != vec_owner ) {
-		set_MSR_VE();
+		uint32_t msr = set_MSR_VE();
 		dst0_new_context(vp,
 						PPC_CACHE_ALIGNMENT/VEC_ALIGNMENT,
 						sizeof(VecCtxtBuf)/PPC_CACHE_ALIGNMENT,
@@ -550,7 +557,14 @@ VecCtxt vp = get_tcp(heir);
 			save_vec_context(get_tcp(vec_owner));
 		load_vec_context(vp);
 		vec_owner = heir;
-		clr_MSR_VE();
+		/* Note the potential for corruption: if the executing thread
+		 * has VE, it may corrupt the heir's v-context since it is
+		 * now loaded.
+		 * We cannot switch VE off, however, since this would result
+		 * in an incorrect MSR being saved!
+		 * Consequence of not having a 'post-switch' hook...
+		 */
+		rst_MSR_VE(msr);
 	}
 }
 
