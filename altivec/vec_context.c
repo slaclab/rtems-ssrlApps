@@ -494,16 +494,16 @@ save_vec_context(VecCtxt buf)
 			"	mtcr 0		\n"
 #endif
 			"	li	 5,32   \n"
-			"	dcbt 0,%0	\n"	/* preload 1st line where vcsr and vrsave are to be stored */
+			"	dcbt 0,%1	\n"	/* preload 1st line where vcsr and vrsave are to be stored */
 			                    /* DONT dcbz; the BPTR is stored in the first line         */
-			"	dcbz 5,%0	\n" /* preload 2 lines for 1st 4 vectors                       */
-			"	dcbz 5,%2	\n"
-			S32VEC(%0,%1,%2,%3,5,4)
+			"	dcbz 5,%1	\n" /* preload 2 lines for 1st 4 vectors                       */
+			"	dcbz 5,%3	\n"
+			S32VEC(%1,%2,%3,%4,5,4)
 			"	mfvscr   0  \n"
-			"	stw 0,0(%0) \n" /* store vrsave at offset 0                                */
+			"	stw 0,0(%1) \n" /* store vrsave at offset 0                                */
 			"	li  5,12    \n" /* select 3rd word of v0                                   */
-			"	stvewx 0,%0,5\n"/* store vscr                                             */
-			:
+			"	stvewx 0,%1,5\n"/* store vscr                                             */
+			:"=m"(*buf)
 			:"b"(*buf+0),"b"(*buf+1),"b"(*buf+2),"b"(*buf+3)
 			:"r0","r4","r5"
 #ifndef IGNORE_VRSAVE
@@ -527,7 +527,7 @@ load_vec_context(VecCtxt buf)
 		"	addi   4,4,20      \n"
 		L32VEC(%0,%1,%2,%3,4)
 		:
-		:"b"(*buf+0), "b"(*buf+1), "b"(*buf+2), "b"(*buf+3)
+		:"b"(*buf+0), "b"(*buf+1), "b"(*buf+2), "b"(*buf+3), "m"(*buf)
 		:"r4"
 #ifndef IGNORE_VRSAVE
 		 ,"cr2","cr3","cr4"
