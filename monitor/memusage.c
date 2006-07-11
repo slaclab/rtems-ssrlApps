@@ -43,8 +43,8 @@ int	rval, heapsz;
 	if ( rval ) {
 		fprintf(stderr,"ERROR: unable to retrieve RTEMS workspace info\n");
 	} else {
-		printf("Workspace usage: free %ib, used %ib, configured size %ib\n",
-				info.hi_free, info.hi_used, _Configuration_Table->work_space_size);
+		printf("Workspace usage: free %db, used %db, configured size %db\n",
+				(unsigned)info.hi_free, (unsigned)info.hi_used, (unsigned)_Configuration_Table->work_space_size);
 	}
 
 	heapsz = malloc_free_space();

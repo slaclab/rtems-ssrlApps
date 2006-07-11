@@ -30,7 +30,7 @@ Context_Control		regs;
 	if (OBJECTS_LOCAL!=loc || !tcb) {
 		if (tcb)
 			_Thread_Enable_dispatch();
-		fprintf(stderr,"Id %x not found on local node\n",id);
+		fprintf(stderr,"Id %x not found on local node\n",(unsigned)id);
 		return -1;
 	}
 	stackbuf[0]=0;
@@ -75,21 +75,21 @@ Context_Control		regs;
 	}
 	printf("\nRegisters:\n");
 	printf("GPR1:  0x%08x\n",
-			regs.gpr1);
+			(unsigned)regs.gpr1);
 	printf("GPR2:  0x%08x, GPR13: 0x%08x, GPR14: 0x%08x, GPR15: 0x%08x\n",
-			regs.gpr2, regs.gpr13, regs.gpr14, regs.gpr15);
+			(unsigned)regs.gpr2,  (unsigned)regs.gpr13, (unsigned)regs.gpr14, (unsigned)regs.gpr15);
 	printf("GPR16: 0x%08x, GPR17: 0x%08x, GPR18: 0x%08x, GPR19: 0x%08x\n",
-			regs.gpr16, regs.gpr17, regs.gpr18, regs.gpr19);
+			(unsigned)regs.gpr16, (unsigned)regs.gpr17, (unsigned)regs.gpr18, (unsigned)regs.gpr19);
 	printf("GPR20: 0x%08x, GPR21: 0x%08x, GPR22: 0x%08x, GPR23: 0x%08x\n",
-			regs.gpr20, regs.gpr21, regs.gpr22, regs.gpr23);
+			(unsigned)regs.gpr20, (unsigned)regs.gpr21, (unsigned)regs.gpr22, (unsigned)regs.gpr23);
 	printf("GPR24: 0x%08x, GPR25: 0x%08x, GPR26: 0x%08x, GPR27: 0x%08x\n",
-			regs.gpr24, regs.gpr25, regs.gpr26, regs.gpr27);
+			(unsigned)regs.gpr24, (unsigned)regs.gpr25, (unsigned)regs.gpr26, (unsigned)regs.gpr27);
 	printf("GPR28: 0x%08x, GPR29: 0x%08x, GPR30: 0x%08x, GPR31: 0x%08x\n\n",
-			regs.gpr28, regs.gpr29, regs.gpr30, regs.gpr31);
+			(unsigned)regs.gpr28, (unsigned)regs.gpr29, (unsigned)regs.gpr30, (unsigned)regs.gpr31);
 	printf("CR:    0x%08x\n",
-			regs.cr);
+			(unsigned)regs.cr);
 	printf("MSR:   0x%08x\n",
-			regs.msr);
+			(unsigned)regs.msr);
 
 	printf("\nStack Trace:\n");
 
