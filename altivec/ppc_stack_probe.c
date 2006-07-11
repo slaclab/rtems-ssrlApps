@@ -59,7 +59,7 @@ lr   *r1;
 void *lr;
 	asm volatile("mr %0,1; mflr %1":"=r"(r1),"=r"(lr));
 	while ( r1->up ) {
-		printf("R1: 0x%08x; return addr 0x%08x\n",(uint32_t)r1,(uint32_t)lr);
+		printf("R1: 0x%08x; return addr 0x%08x\n",(unsigned)r1,(unsigned)lr);
 		r1=r1->up;
 		lr=r1->lr;
 	}

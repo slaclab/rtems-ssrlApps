@@ -591,7 +591,7 @@ rtems_status_code sc;
 	if ( vec_owner ) {
 		id = vec_owner->Object.id;
 		_Thread_Enable_dispatch();
-		fprintf(stderr,"At least one thread (0x%08x) still using AltiVec; cannot shutdown\n", id);
+		fprintf(stderr,"At least one thread (0x%08x) still using AltiVec; cannot shutdown\n", (unsigned)id);
 		return -1;
 	}
 	id = vec_extension_id;
