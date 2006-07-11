@@ -308,7 +308,7 @@ int startTelnetd(void (*cmd)(char *, void *), void *arg, int dontSpawn, int stac
 	sc=initialize_telnetd();
         if (sc!=RTEMS_SUCCESSFUL) return sc;
 	printf("rtems_telnetd() started with stacksize=%u,priority=%d\n",
-                        telnetd_stack_size,telnetd_task_priority);
+                        (unsigned)telnetd_stack_size,(int)telnetd_task_priority);
 	return 0;
 }
 
