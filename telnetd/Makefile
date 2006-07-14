@@ -82,3 +82,8 @@ $(ARCH)/telnetd.o: check_passwd.c
 # for include files, just use $(INSTALL_CHANGE)
 install:  all
 	$(INSTALL_VARIANT) -m 555 ${PGMS} ${RTEMS_SITE_INSTALLDIR}/bin
+
+REVISION=$(filter-out $$%,$$Name$$)
+
+tar:
+	$(make-tar)
