@@ -1,7 +1,7 @@
 HOW TO BUILD THE SSRL RTEMS-APPLICATIONS
 $Id$
 
-Till Straumann, 2003/4/10
+Till Straumann, 2003/4/10, 2006/07/27
 
 To build the software under 'ssrlApps'
 from scratch, the following steps are necessary:
@@ -145,6 +145,12 @@ There are essentially two flavors of applications:
    the package is intended to _run_ on, not the one it is
    built on. The latter can be specified with the '--build=xxx'
    option which is usually omitted (=autodetect).
+
+   NOTE: I found that (especially with newer versions of these
+   tools) it may be necessary to explicitely specify the
+   '--build' architecture. You can use the 'config.guess' script
+   for that purpose: --build=`<src_top>/config.guess`.
+
    (The '--target' architecture is used for 'cross-tools', i.e.,
    it specifies the architecture of the system the tool should
    operate on. E.g., in case of a cross-compiler, what machine
