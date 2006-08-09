@@ -260,7 +260,7 @@ static int initialize_telnetd(void) {
 	sc=rtems_task_create(rtems_build_name('t','n','t','d'),
 			     100,RTEMS_MINIMUM_STACK_SIZE,	
 			     RTEMS_DEFAULT_MODES,
-			     RTEMS_DEFAULT_ATTRIBUTES,
+			     RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT,
 			     &telnetd_task_id);
         if (sc!=RTEMS_SUCCESSFUL) {
 		rtems_error(sc,"creating task telnetd");
