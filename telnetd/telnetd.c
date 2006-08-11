@@ -73,7 +73,13 @@ void				*telnetd_shell_arg	 =0;
 static char *grab_a_Connection(int des_socket, struct sockaddr_in *srv, char *peername, int sz)
 {
 char		*rval = 0;
-socklen_t	size_adr = sizeof(*srv);
+#if 0
+socklen_t	
+#else
+/* 4.6 doesn't have socklen_t */
+unsigned
+#endif
+			size_adr = sizeof(*srv);
 int			acp_sock;
 
 	acp_sock = accept(des_socket,(struct sockaddr*)srv,&size_adr);
@@ -123,9 +129,15 @@ static void release_a_Connection(char *devname, char *peername, FILE **pstd, int
 static int sockpeername(int sock, char *buf, int bufsz)
 {
 struct sockaddr_in peer;
-socklen_t len  = sizeof(peer);
+#if 0
+socklen_t	
+#else
+/* 4.6 doesn't have socklen_t */
+unsigned
+#endif
+		len  = sizeof(peer);
 
-int       rval = sock < 0;
+int		rval = sock < 0;
 
 	if ( !rval)
 		rval = getpeername(sock, (struct sockaddr*)&peer, &len);
