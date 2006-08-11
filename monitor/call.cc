@@ -10,6 +10,24 @@
 extern "C" {
 #endif
 
+#include <rtems/system.h>
+
+#define ISMINVERSION(ma,mi,re) \
+	(    __RTEMS_MAJOR__  > (ma)	\
+	 || (__RTEMS_MAJOR__ == (ma) && __RTEMS_MINOR__  > (mi))	\
+	 || (__RTEMS_MAJOR__ == (ma) && __RTEMS_MINOR__ == (mi) && __RTEMS_REVISION__ >= (re)) \
+    )
+
+#if ISMINVERSION(4,6,99)
+typedef rtems_monitor_command_arg_t *monfargt;
+#define ARG2PTR(arg) ((arg)->symbol_table)
+#define CMD2ARG(cmd) (&(cmd)->command_arg)
+#else
+typedef rtems_monitor_command_arg_t monfargt;
+#define ARG2PTR(arg) (arg)
+#define CMD2ARG(cmd) ((cmd)->command_arg)
+#endif
+
 static rtems_id monitorMutex=0;
 
 extern rtems_monitor_command_entry_t rtems_monitor_commands[];
@@ -21,7 +39,7 @@ int
 memUsageDump(void);
 
 static void
-fnwrap(int argc, char **argv, rtems_monitor_command_arg_t *arg, boolean verbose)
+fnwrap(int argc, char **argv, monfargt arg, boolean verbose)
 {
 unsigned long	iarg;
 char			*endp;
@@ -36,10 +54,10 @@ if ( argc > 0 ) {
 	} else {
 		iarg=0;
 	}
-	((void (*)(unsigned long))arg->symbol_table)(iarg);
+	((void (*)(unsigned long))ARG2PTR(arg))(iarg);
 } else {
 		fprintf(stderr,"no args\n");
-	((void (*)(void))arg->symbol_table)();
+	((void (*)(void))ARG2PTR(arg))();
 }
 }
 
@@ -55,7 +73,11 @@ public:
 		usage                    = help;
 		arguments_required       = args_req;
 		command_function         = (rtems_monitor_command_function_t)fnwrap;
+#if ISMINVERSION(4,6,99)
 		command_arg.symbol_table = (rtems_symbol_table_t**)fp;
+#else
+		command_arg              = (rtems_monitor_command_arg_t)fp;
+#endif
 		next                     = 0;
 		}
 };
@@ -143,7 +165,7 @@ char	*line,*buf=0;
 						rtems_monitor_commands,
 						argc,
 						argv)))
-        	cmd->command_function(argc, argv, &cmd->command_arg, verbose);
+        	cmd->command_function(argc, argv, CMD2ARG(cmd), verbose);
 		else {
 			fprintf(stderr,"Command '%s' not found\n",argv[0]);
 		}
