@@ -140,10 +140,10 @@ BUILDDIRS = $(filter %.$(BUILDEXT),$(SUBDIRS))
 
 # we simply delete these, no need to recurse into the build
 # directories
-distclean: SUBDIRS=$(filter-out %.$(BUILDEXT),$(SUBDIRS))
+distclean: SUBDIRS:=$(filter-out %.$(BUILDEXT),$(SUBDIRS))
 
 # only cleanup existing build directories
-clean: SUBDIRS=$(foreach dir,$(SUBDIRS),$(wildcard $(dir)))
+clean: SUBDIRS:=$(foreach dir,$(SUBDIRS),$(wildcard $(dir)))
 
 error:
 	@echo
@@ -199,9 +199,13 @@ ifndef RTEMS_SITE_INFODIR
 RTEMS_SITE_INFODIR=$(RTEMS_SITE_DOCDIR)/info
 endif
 
+ifndef BUILDARCH
+BUILDARCH=$(sh ../$(@:%.$(BUILDEXT)/Makefile=%)/config.guess)
+endif
+
 %.$(BUILDEXT)/Makefile:
 	test -d $(dir $@) || $(MKDIR) $(dir $@)
-	cd	$(dir $@) ; ../$(@:%.$(BUILDEXT)/Makefile=%)/configure --build=`../$(@:%.$(BUILDEXT)/Makefile=%)/config.guess` --host=$(RTEMS_CPU)-rtems --disable-nls --prefix=$(RTEMS_SITE_INSTALLDIR) --mandir=$(RTEMS_SITE_MANDIR) --infodir=$(RTEMS_SITE_INFODIR) --with-newlib CC=$(word 1,$(CC)) CFLAGS="$(CPU_CFLAGS) $(CFLAGS)" CXXFLAGS="$(CPU_CFLAGS) $(CXXFLAGS)" --enable-multilib=no
+	cd	$(dir $@) ; ../$(@:%.$(BUILDEXT)/Makefile=%)/configure --build=$(BUILDARCH) --host=$(RTEMS_CPU)-rtems --disable-nls --prefix=$(RTEMS_SITE_INSTALLDIR) --mandir=$(RTEMS_SITE_MANDIR) --infodir=$(RTEMS_SITE_INFODIR) --with-newlib CC=$(word 1,$(CC)) CFLAGS="$(CPU_CFLAGS) $(CFLAGS)" CXXFLAGS="$(CPU_CFLAGS) $(CXXFLAGS)" --enable-multilib=no
 
 $(INSTDIRS) $(RTEMS_SITE_DIR):
 	$(MKDIR) -p $@
