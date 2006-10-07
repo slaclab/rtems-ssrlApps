@@ -247,6 +247,7 @@ rtems_status_code sc;
 		default:
 			printk(NAM": Not a known AltiVec CPU (PVR id 0x%04x)\n", pvr);
 			return -1;
+		case PPC_PSIM:
 		case PPC_7400:
 		case PPC_7455:
 		case PPC_7457:
