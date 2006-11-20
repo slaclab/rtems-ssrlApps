@@ -105,12 +105,12 @@ SUBDIRS+=libbspExt
 SUBDIRS+=altivec
 endif
 
-ifeq ($(RTEMS_BSP),uC5282)
-SUBDIRS+=coldfUtils
+ifneq ($(filter $(RTEMS_CPU),powerpc i386 m68k)xx,xx)
+SUBDIRS+=rtems-gdb-stub
 endif
 
-ifneq ($(filter $(RTEMS_CPU),powerpc i386)xx,xx)
-SUBDIRS+=rtems-gdb-stub
+ifeq ($(RTEMS_BSP),uC5282)
+SUBDIRS+=coldfUtils
 endif
 
 SUBDIRS+=cexp.$(BUILDEXT)
