@@ -1,3 +1,7 @@
+ Changes since telnetd-1.2:
+  - use union around sockaddr_in/sockaddr to silence 'type-punned pointer'
+    warnings.
+
  Changes since telnetd-1.0:
 
   - plugged the most blatant security holes (NOTE: telnetd probably still

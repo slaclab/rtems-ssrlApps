@@ -58,6 +58,11 @@ struct shell_args {
 	char	peername[16];
 };
 
+typedef union uni_sa {
+	struct sockaddr_in	sin;
+	struct sockaddr     sa;
+} uni_sa;
+
 static int sockpeername(int sock, char *buf, int bufsz);
 
 static int initialize_telnetd();
@@ -70,19 +75,19 @@ int					telnetd_dont_spawn   =0;
 void				(*telnetd_shell)(char *, void*)=0;
 void				*telnetd_shell_arg	 =0;
 
-static char *grab_a_Connection(int des_socket, struct sockaddr_in *srv, char *peername, int sz)
+static char *grab_a_Connection(int des_socket, uni_sa *srv, char *peername, int sz)
 {
 char		*rval = 0;
 #if 0
 socklen_t	
 #else
 /* 4.6 doesn't have socklen_t */
-unsigned
+uint32_t
 #endif
-			size_adr = sizeof(*srv);
+			size_adr = sizeof(srv->sin);
 int			acp_sock;
 
-	acp_sock = accept(des_socket,(struct sockaddr*)srv,&size_adr);
+	acp_sock = accept(des_socket,&srv->sa,&size_adr);
 
 	if (acp_sock<0) {
 		perror("telnetd:accept");
@@ -128,22 +133,22 @@ static void release_a_Connection(char *devname, char *peername, FILE **pstd, int
 
 static int sockpeername(int sock, char *buf, int bufsz)
 {
-struct sockaddr_in peer;
+uni_sa	peer;
 #if 0
 socklen_t	
 #else
 /* 4.6 doesn't have socklen_t */
-unsigned
+uint32_t
 #endif
-		len  = sizeof(peer);
+		len  = sizeof(peer.sin);
 
 int		rval = sock < 0;
 
 	if ( !rval)
-		rval = getpeername(sock, (struct sockaddr*)&peer, &len);
+		rval = getpeername(sock, &peer.sa, &len);
 
 	if ( !rval )
-		rval = !inet_ntop( AF_INET, &peer.sin_addr, buf, bufsz );
+		rval = !inet_ntop( AF_INET, &peer.sin.sin_addr, buf, bufsz );
 
 	return rval;
 }
@@ -164,7 +169,7 @@ static rtems_task
 rtems_task_telnetd(rtems_task_argument task_argument)
 {
 int					des_socket;
-struct sockaddr_in	srv;
+uni_sa				srv;
 char				*devname;
 char				peername[16];
 int					i=1;
@@ -181,10 +186,10 @@ struct shell_args	*arg;
 	setsockopt(des_socket,SOL_SOCKET,SO_KEEPALIVE,&i,sizeof(i));
 
 	memset(&srv,0,sizeof(srv));
-	srv.sin_family=AF_INET;
-	srv.sin_port=htons(23);
-	size_adr=sizeof(srv);
-	if ((bind(des_socket,(struct sockaddr *)&srv,size_adr))<0) {
+	srv.sin.sin_family=AF_INET;
+	srv.sin.sin_port=htons(23);
+	size_adr=sizeof(srv.sin);
+	if ((bind(des_socket,&srv.sa,size_adr))<0) {
 		perror("telnetd:bind");
 	        close(des_socket);
 		telnetd_task_id=0;
