@@ -12,7 +12,7 @@ char	*args[]={"Cexp-telnet",0};
 
 void _cexpModuleInitialize(void *m)
 {
-	startTelnetd(cexpWrap,0,0,32000,100);
+	startTelnetd(cexpWrap,0,0,32000,0);
 }
 
 /* telnetd can't be stopped */

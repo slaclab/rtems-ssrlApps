@@ -45,6 +45,7 @@
 
 #include <rtems/userenv.h>
 #include <rtems/error.h>
+#include <rtems/rtems_bsdnet.h>
 
 #define PARANOIA
 
@@ -56,6 +57,7 @@ struct shell_args {
 	char	*devname;
 	void	*arg;
 	char	peername[16];
+	char	delete_myself;
 };
 
 typedef union uni_sa {
@@ -67,13 +69,16 @@ static int sockpeername(int sock, char *buf, int bufsz);
 
 static int initialize_telnetd();
 
+void * telnetd_dflt_spawn(char *name, int priority, int stackSize, rtems_task (*fn)(rtems_task_argument), rtems_task_argument fnarg);
+
 /***********************************************************/
 rtems_id            telnetd_task_id      =0;
-rtems_unsigned32    telnetd_stack_size   =32000;
-rtems_task_priority telnetd_task_priority=100;
+uint32_t		    telnetd_stack_size   =32000;
+rtems_task_priority telnetd_task_priority=0;
 int					telnetd_dont_spawn   =0;
 void				(*telnetd_shell)(char *, void*)=0;
 void				*telnetd_shell_arg	 =0;
+void *				(*telnetd_spawn_task)(char *, int, int, rtems_task (*)(rtems_task_argument), rtems_task_argument) = telnetd_dflt_spawn;
 
 static char *grab_a_Connection(int des_socket, uni_sa *srv, char *peername, int sz)
 {
@@ -174,8 +179,6 @@ char				*devname;
 char				peername[16];
 int					i=1;
 int					size_adr;
-rtems_id 			task_id;	/* unused */
-rtems_status_code	sc;
 struct shell_args	*arg;
 
 	if ((des_socket=socket(PF_INET,SOCK_STREAM,0))<0) {
@@ -223,25 +226,14 @@ struct shell_args	*arg;
 		arg->arg = telnetd_shell_arg;
 		strncpy(arg->peername, peername, sizeof(arg->peername));
 
-		if ((sc=rtems_task_create(
-				rtems_build_name(
-						devname[5],
-						devname[6],
-						devname[7],
-						devname[8]),
-				telnetd_task_priority,
-				telnetd_stack_size,
-				RTEMS_DEFAULT_MODES,
-				RTEMS_LOCAL | RTEMS_FLOATING_POINT,
-				&task_id)) ||
-			(sc=rtems_task_start(
-				task_id,
-				spawned_shell,
-				(rtems_task_argument)arg))) {
+		if ( !telnetd_spawn_task(&devname[5], telnetd_task_priority, telnetd_stack_size, spawned_shell, (rtems_task_argument)arg) ) {
 
 			FILE *dummy;
 
-			rtems_error(sc,"Telnetd: spawning child task");
+			if ( telnetd_spawn_task != telnetd_dflt_spawn ) {
+				fprintf(stderr,"Telnetd: Unable to spawn child task\n");
+			}
+
 			/* hmm - the pty driver slot can only be
 			 * released by opening and subsequently
 			 * closing the PTY - this also closes
@@ -265,32 +257,19 @@ struct shell_args	*arg;
 	 */
 	close(des_socket);
 	telnetd_task_id=0;
-	rtems_task_delete(RTEMS_SELF);
 }
 /***********************************************************/
 static int initialize_telnetd(void) {
-	rtems_status_code sc;
 	
 	if (telnetd_task_id         ) return RTEMS_RESOURCE_IN_USE;
 	if (telnetd_stack_size<=0   ) telnetd_stack_size   =32000;
-	if (telnetd_task_priority<=2) telnetd_task_priority=100;
-	sc=rtems_task_create(rtems_build_name('t','n','t','d'),
-			     100,RTEMS_MINIMUM_STACK_SIZE,	
-			     RTEMS_DEFAULT_MODES,
-			     RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT,
-			     &telnetd_task_id);
-        if (sc!=RTEMS_SUCCESSFUL) {
-		rtems_error(sc,"creating task telnetd");
-		return (int)sc;
-	};
-	sc=rtems_task_start(telnetd_task_id,
-			    rtems_task_telnetd,
-			    (rtems_task_argument)NULL);
-        if (sc!=RTEMS_SUCCESSFUL) {
-		rtems_error(sc,"starting task telnetd");
-	};
-	return (int)sc;
+
+	if ( !telnetd_spawn_task("TNTD", telnetd_task_priority, RTEMS_MINIMUM_STACK_SIZE, rtems_task_telnetd, 0) ) {
+		return -1;	
+	}
+	return 0;
 }
+
 /***********************************************************/
 int startTelnetd(void (*cmd)(char *, void *), void *arg, int dontSpawn, int stack, int priority)
 {
@@ -319,6 +298,11 @@ int startTelnetd(void (*cmd)(char *, void *), void *arg, int dontSpawn, int stac
 		telnetd_shell = cmd;
 	telnetd_shell_arg     = arg;
 	telnetd_stack_size    = stack;
+	if ( !priority ) {
+		priority = rtems_bsdnet_config.network_task_priority;
+	}
+	if ( priority < 2 )
+		priority=100;
 	telnetd_task_priority = priority;
 	telnetd_dont_spawn    = dontSpawn;
 
@@ -385,7 +369,62 @@ write(fileno(stdout),"hellofd\n",8);
 cleanup:
 	release_a_Connection(arg->devname, arg->peername, nstd, i);
 	free(arg);
+}
+
+struct wrap_delete_args {
+	rtems_task (*t)(rtems_task_argument);
+	rtems_task_argument a;
+};
+
+static void
+wrap_delete(rtems_task_argument arg)
+{
+struct wrap_delete_args      *pwa = (struct wrap_delete_args *)arg;
+register rtems_task          (*t)(rtems_task_argument) = pwa->t;
+register rtems_task_argument a    = pwa->a;
+
+	/* free argument before calling function (which may never return if
+	 * they choose to delete themselves)
+	 */
+	free(pwa);
+	t(a);
 	rtems_task_delete(RTEMS_SELF);
+}
+
+void *
+telnetd_dflt_spawn(char *name, int priority, int stackSize, rtems_task (*fn)(rtems_task_argument), rtems_task_argument fnarg)
+{
+rtems_status_code sc;
+rtems_id          task_id;
+char              nm[4] = {'X','X','X','X' };
+struct wrap_delete_args *pwa = malloc(sizeof(*pwa));
+
+		strncpy(nm, name, 4);
+
+		if ( !pwa ) {
+			perror("Telnetd: no memory\n");
+			return 0;
+		}
+
+		pwa->t = fn;
+		pwa->a = fnarg;
+
+		if ((sc=rtems_task_create(
+				rtems_build_name(nm[0], nm[1], nm[2], nm[3]),
+				priority,
+				stackSize,
+				RTEMS_DEFAULT_MODES,
+				RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT,
+				&task_id)) ||
+			(sc=rtems_task_start(
+				task_id,
+				wrap_delete,
+				(rtems_task_argument)pwa))) {
+					free(pwa);
+					rtems_error(sc,"Telnetd: spawning task failed");
+					return 0;
+		}
+	return (void*)task_id;
 }
 
 /* convenience routines for CEXP (retrieve stdio descriptors
