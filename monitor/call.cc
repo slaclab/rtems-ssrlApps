@@ -28,6 +28,15 @@ typedef rtems_monitor_command_arg_t monfargt;
 #define CMD2ARG(cmd) ((cmd)->command_arg)
 #endif
 
+#if ISMINVERSION(4,6,99)
+/* BAD: somewhere along the line the API for cpuuse was changed :-( but there
+ * was no change in the RTEMS version numbers, so you might have
+ * to tune things up here manually...
+ */
+#define CPU_usage_Dump  rtems_cpu_usage_report
+#define CPU_usage_Reset rtems_cpu_usage_reset
+#endif
+
 static rtems_id monitorMutex=0;
 
 extern rtems_monitor_command_entry_t rtems_monitor_commands[];
