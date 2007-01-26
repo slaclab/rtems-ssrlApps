@@ -117,7 +117,7 @@ SUBDIRS+=cexp.$(BUILDEXT)
 
 # apps below here depend on cexp and/or tecla and hence
 # are made later
-ifeq ("$(RTEMS_BSP)","svgm")
+ifneq ($(filter $(RTEMS_BSP),svgm beatnik uC5282)xx,xx)
 SUBDIRS+=svgmWatchdog
 endif
 
