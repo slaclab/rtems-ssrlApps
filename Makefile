@@ -103,6 +103,7 @@ AUTOCONFSUBDIRS+=cexp
 ifeq ($(RTEMS_CPU),powerpc)
 SUBDIRS+=libbspExt
 SUBDIRS+=altivec
+SUBDIRS+=efence
 endif
 
 ifneq ($(filter $(RTEMS_CPU),powerpc i386 m68k)xx,xx)
@@ -117,6 +118,10 @@ SUBDIRS+=cexp.$(BUILDEXT)
 
 # apps below here depend on cexp and/or tecla and hence
 # are made later
+ifneq ($(filter $(RTEMS_BSP),svgm beatnik)xx,xx)
+SUBDIRS+=amdeth
+endif
+
 ifneq ($(filter $(RTEMS_BSP),svgm beatnik uC5282)xx,xx)
 SUBDIRS+=svgmWatchdog
 endif
