@@ -124,7 +124,7 @@ ifneq ($(filter $(RTEMS_BSP),svgm beatnik)xx,xx)
 SUBDIRS+=amdeth
 endif
 
-ifneq ($(filter $(RTEMS_BSP),svgm beatnik uC5282)xx,xx)
+ifneq ($(filter $(RTEMS_BSP),beatnik uC5282)xx,xx)
 SUBDIRS+=drvLan9118
 endif
 
