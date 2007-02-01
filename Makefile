@@ -103,7 +103,9 @@ AUTOCONFSUBDIRS+=cexp
 ifeq ($(RTEMS_CPU),powerpc)
 SUBDIRS+=libbspExt
 SUBDIRS+=altivec
+ifneq ($(RTEMS_BSP),psim)
 SUBDIRS+=efence
+endif
 endif
 
 ifneq ($(filter $(RTEMS_CPU),powerpc i386 m68k)xx,xx)
