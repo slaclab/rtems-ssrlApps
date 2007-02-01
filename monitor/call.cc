@@ -28,7 +28,7 @@ typedef rtems_monitor_command_arg_t monfargt;
 #define CMD2ARG(cmd) ((cmd)->command_arg)
 #endif
 
-#if ISMINVERSION(4,6,99)
+#if ISMINVERSION(4,6,99) && 0
 /* BAD: somewhere along the line the API for cpuuse was changed :-( but there
  * was no change in the RTEMS version numbers, so you might have
  * to tune things up here manually...
