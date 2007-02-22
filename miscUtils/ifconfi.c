@@ -13,11 +13,25 @@
 #include <sys/sockio.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
+#include <net/route.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
 #include <bsp.h>
+
+#define DEBUG
+
+typedef union {
+	struct sockaddr    soa;
+	struct sockaddr_in sin;
+} sockaddr_alias_u;
+
+/* #ifdef ed for unknown reasons in the headers :-( */
+extern in_addr_t inet_lnaof(struct in_addr in);
+extern int inet_aton(const char *cp, struct in_addr *inp);
+extern struct in_addr inet_makeaddr(int net, int host);
+extern in_addr_t inet_netof(struct in_addr in);
 
 /* configure interface 'name' to use IP address 'addr' and netmask 'msk'
  * (both strings in IP 'dot' notation). Bring IF up.
@@ -25,9 +39,9 @@
  * 'addr' may be NULL to bring the IF down.
  */
 int
-ifconf(char *nam, char *addr, char *msk)
+ifconf(char *nam, char *addr, char *msk_s)
 {
-struct sockaddr_in sin;
+sockaddr_alias_u   sin,msk;
 int	               flags;
 int                rval = -1;
 
@@ -37,9 +51,10 @@ int                rval = -1;
 	}
 
 	memset( &sin, 0, sizeof(sin) );
-	sin.sin_len     = sizeof(sin);
-	sin.sin_family  = AF_INET;
-	sin.sin_port    = htons(0);
+	memset( &msk, 0, sizeof(msk) );
+	sin.sin.sin_len     = msk.sin.sin_len    = sizeof(sin);
+	sin.sin.sin_family  = msk.sin.sin_family = AF_INET;
+	sin.sin.sin_port    = msk.sin.sin_port   = htons(0);
 
 	flags = addr ? IFF_UP : 0;
 
@@ -47,23 +62,37 @@ int                rval = -1;
 		fprintf(stderr,"Unable to bring '%s' %s\n", nam, addr ? "UP" : "DOWN");
 		return -1;
 	}
-	if ( !addr )
+	if ( !addr ) {
+		if ( rtems_bsdnet_ifconfig(nam, SIOCGIFADDR, &sin.sin) ) {
+			fprintf(stderr,"Unable to retrieve interface address (cannot delete route through this IF)\n");
+			return -1;
+		}
+		if ( rtems_bsdnet_ifconfig(nam,SIOCGIFNETMASK,&msk.sin) ) {
+			fprintf(stderr,"Unable to retrieve interface netmask (cannot delete route through this IF)\n");
+			return -1;
+		}
+		sin.sin.sin_addr.s_addr &= msk.sin.sin_addr.s_addr;
+		if ( rtems_bsdnet_rtrequest( RTM_DELETE, &sin.soa, 0, &msk.soa, RTF_UP, NULL) ) {
+			perror("Unable to delete route through this IF");
+			return -1;
+		}
 		return 0;
+	}
 
-	if ( !inet_aton(addr, &sin.sin_addr) ) {
+	if ( !inet_aton(addr, &sin.sin.sin_addr) ) {
 		fprintf(stderr,"Invalid IP address '%s'\n", addr);
 		goto cleanup;
 	}
-	if ( rtems_bsdnet_ifconfig(nam,SIOCSIFADDR,&sin) ) {
+	if ( rtems_bsdnet_ifconfig(nam,SIOCSIFADDR,&sin.sin) ) {
 		fprintf(stderr,"Unable to set IP address on '%s'\n",nam);
 		goto cleanup;
 	}		
-	if ( msk ) {
-		if ( !inet_aton(msk, &sin.sin_addr) ) {
-			fprintf(stderr,"Invalid IP MASK '%s'\n", msk);
+	if ( msk_s ) {
+		if ( !inet_aton(msk_s, &sin.sin.sin_addr) ) {
+			fprintf(stderr,"Invalid IP MASK '%s'\n", msk_s);
 			goto cleanup;
 		}
-		if ( rtems_bsdnet_ifconfig(nam,SIOCSIFNETMASK,&sin) ) {
+		if ( rtems_bsdnet_ifconfig(nam,SIOCSIFNETMASK,&sin.sin) ) {
 			fprintf(stderr,"Unable to set NETMASK address on '%s'\n",nam);
 			goto cleanup;
 		}
@@ -120,4 +149,99 @@ struct rtems_bsdnet_ifconfig cfg;
 	rtems_bsdnet_semaphore_release();
 
 	return rval;
+}
+
+/* Manage routing table entries
+ *
+ * 'add': add route if nonzero, delete if zero
+ * 'dst': destination/target of route (string in IP dot notation)
+ *        If the destination ANDed with the complement of the netmask 
+ *        is empty (zero) the route is treated as a 'net' route
+ *        otherwise as a 'host' route.
+ * 'gwy': gateway (destination reached through 'gwy')
+ *        (string in IP dot notation). May be NULL for ordinary routes.
+ * 'msk': netmask. May be NULL (in this case a default according
+ *        to the class of the 'dst' network will be computed.
+ *
+ * RETURNS: 0 on success; prints error info and returns nonzero if
+ *          a error is encountered.
+ */
+
+int
+rtconf(int add, char *dst_s, char *gwy_s, char *msk_s)
+{
+sockaddr_alias_u dst, gwy, msk;
+int              flags = 0;
+
+	if ( !dst_s ) {
+		fprintf(stderr,"Need destination address\n");
+		return -1;
+	}
+
+	memset( &dst, 0, sizeof(dst) );
+	memset( &gwy, 0, sizeof(gwy) );
+	memset( &msk, 0, sizeof(msk) );
+
+	dst.sin.sin_len    = gwy.sin.sin_len = msk.sin.sin_len = sizeof(dst.sin);
+	dst.sin.sin_family = gwy.sin.sin_family = msk.sin.sin_family = AF_INET;
+
+	gwy.sin.sin_addr.s_addr = INADDR_ANY;
+	msk.sin.sin_addr.s_addr = INADDR_ANY;
+
+	if ( !inet_aton(dst_s, &dst.sin.sin_addr) ) {
+		fprintf(stderr,"Destination: Invalid IP address '%s'\n", dst_s);
+		goto cleanup;
+	}
+	if ( gwy_s && !inet_aton(gwy_s, &gwy.sin.sin_addr) ) {
+		fprintf(stderr,"Gateway: Invalid IP address '%s'\n", gwy_s);
+		goto cleanup;
+	}
+	if ( msk_s && !inet_aton(msk_s, &msk.sin.sin_addr) ) {
+		fprintf(stderr,"Netmask: Invalid IP address '%s'\n", msk_s);
+		goto cleanup;
+	}
+
+	if ( gwy_s )
+		flags |= RTF_GATEWAY;
+
+	if ( msk_s ) {
+		if (dst.sin.sin_addr.s_addr & ~msk.sin.sin_addr.s_addr)
+			flags |= RTF_HOST;
+	} else {
+		struct in_addr a = inet_makeaddr(inet_netof(dst.sin.sin_addr),0);
+		struct in_addr b = inet_makeaddr(inet_netof(dst.sin.sin_addr),-1);
+
+		if ( inet_lnaof(dst.sin.sin_addr) )
+			flags |= RTF_HOST;
+
+		msk.sin.sin_addr.s_addr = ~ ( a.s_addr ^ b.s_addr );
+	}
+
+	if ( add )
+		flags |= RTF_UP;
+		
+	flags |= RTF_STATIC;
+
+#ifdef DEBUG
+	printf("DST: %s, ", inet_ntoa(dst.sin.sin_addr));
+	printf("GWY: %s, ", inet_ntoa(gwy.sin.sin_addr));
+	printf("MSK: %s, ", inet_ntoa(msk.sin.sin_addr));
+	printf("FLGS: 0x%08x\n", flags);
+#endif
+
+	if ( rtems_bsdnet_rtrequest(
+			add ? RTM_ADD : RTM_DELETE,
+			&dst.soa,
+			&gwy.soa,
+			&msk.soa,
+			flags,
+			NULL) ) {
+		perror("Route request");
+		goto cleanup;
+	}
+
+	return 0;
+
+cleanup:
+	return -1;
 }
