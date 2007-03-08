@@ -6,7 +6,7 @@
 #
 
 # C source names, if any, go here -- minus the .c
-C_PIECES=memUtils loop ifconfi ttyconfi
+C_PIECES=memUtils loop ifconfi ttyconfi icmpping
 C_FILES=$(C_PIECES:%=%.c)
 C_O_FILES=$(C_PIECES:%=${ARCH}/%.o)
 
@@ -15,7 +15,7 @@ CC_PIECES=
 CC_FILES=$(CC_PIECES:%=%.cc)
 CC_O_FILES=$(CC_PIECES:%=${ARCH}/%.o)
 
-H_FILES=
+H_FILES=ping.h
 
 # Assembly source names, if any, go here -- minus the .S
 S_PIECES=
