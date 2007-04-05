@@ -173,6 +173,7 @@ Args	args=malloc(sizeof(*args));
 	return rval;
 }
 
+#ifdef HAVE_CEXP
 #include <cexpHelp.h>
 CEXP_HELP_TAB_BEGIN(loopUtil)
 	HELP(
@@ -197,5 +198,6 @@ PPCSTR
 		)
 		),
 CEXP_HELP_TAB_END
+#endif
 
 

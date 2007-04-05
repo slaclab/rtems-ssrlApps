@@ -73,3 +73,13 @@ bail:
 	close(fd);
 	return rval;
 }
+
+#ifdef HAVE_CEXP
+#include <cexpHelp.h>
+CEXP_HELP_TAB_BEGIN(sttyspeed)
+	HELP(
+		"Set speed (baudrate) of a serial TERMIOS device.\n",
+		int, sttyspeed, (int speed, char *ttynam)
+	),
+CEXP_HELP_TAB_END
+#endif

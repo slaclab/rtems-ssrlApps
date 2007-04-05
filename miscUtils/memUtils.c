@@ -269,6 +269,7 @@ return pbat(i,0);
 #endif
 
 #if !defined(MAIN)
+#ifdef HAVE_CEXP
 #include <cexpHelp.h>
 CEXP_HELP_TAB_BEGIN(memutils)
 	HELP(
@@ -301,6 +302,7 @@ CEXP_HELP_TAB_BEGIN(memutils)
 	),
 #endif
 CEXP_HELP_TAB_END
+#endif
 #endif
 
 

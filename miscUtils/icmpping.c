@@ -301,6 +301,7 @@ rtems_ping_t	*pp;
 	return errs;
 }
 
+#ifdef HAVE_CEXP
 #include <cexpHelp.h>
 CEXP_HELP_TAB_BEGIN(icmpping)
 	HELP(
@@ -309,3 +310,4 @@ CEXP_HELP_TAB_BEGIN(icmpping)
 	int, rtems_ping, (char *ipaddr, int retries)
 	),
 CEXP_HELP_TAB_END
+#endif
