@@ -6,6 +6,8 @@
  *
  *  Thomas Rauscher <trauscher@loytec.com>
  *
+ *  Modified by Till Straumann <strauman@slac.stanford.edu>
+ *
  *  The license and distribution terms for this file may be
  *  found in the file LICENSE in this distribution or at
  *  http://www.OARcorp.com/rtems/license.html.
@@ -127,9 +129,9 @@ rtems_ping_t *rtems_ping_open(uint32_t              ip_addr,
   }
 
   /* Set destination address */
-  memset(&ping->dest, 0, sizeof(ping->dest));
-  ping->dest.sin_family = AF_INET;
-  ping->dest.sin_addr.s_addr = htonl(ip_addr);
+  memset(&ping->dest_u, 0, sizeof(ping->dest_u));
+  ping->dest_u.dest_in.sin_family = AF_INET;
+  ping->dest_u.dest_in.sin_addr.s_addr = htonl(ip_addr);
 
   /* Initialize request */
   ping->icmp_req->icmp_type  = ICMP_ECHO;
@@ -145,7 +147,10 @@ int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
   int                sent;
   int                rcvd;
   socklen_t          srclen;
-  struct sockaddr_in src;
+  union	{
+  	struct sockaddr_in src_in;
+	struct sockaddr    src_sa;
+  } src_u;
   rtems_interval     send_time;
   rtems_interval     rcv_time;
   n_short            id = (n_short) (((unsigned long) ping) & 0xffff);
@@ -179,7 +184,7 @@ int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
 
   /* Send ping. */
   sent = sendto(ping->socket, ping->raw_req, ping->req_size, 0,
-		(struct sockaddr *)&ping->dest, sizeof(ping->dest));
+		&ping->dest_u.dest_sa, sizeof(ping->dest_u.dest_sa));
   
   /* Wait for pong. */
   while(1) 
@@ -202,10 +207,10 @@ int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
     }
 
     /* Wait for response. */
-    srclen = sizeof(src);
+    srclen = sizeof(src_u.src_sa);
     memset(ping->raw_resp, 0, ping->req_size);
     rcvd = recvfrom(ping->socket, ping->raw_resp, ping->resp_size, 0, 
-		    (struct sockaddr *)&src, &srclen);
+		    &src_u.src_sa, &srclen);
     
     /* Get ICMP response */
     ping->icmp_resp = ((struct icmp *)
@@ -226,7 +231,7 @@ int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
     if((ping->icmp_resp->icmp_type == ICMP_ECHOREPLY) &&
        (ping->icmp_resp->icmp_id == id) && 
        (ping->icmp_resp->icmp_seq == ping->icmp_req->icmp_seq) &&
-       (src.sin_addr.s_addr == ping->dest.sin_addr.s_addr))
+       (src_u.src_in.sin_addr.s_addr == ping->dest_u.dest_in.sin_addr.s_addr))
     {
       if(trip_time)
       {
@@ -295,3 +300,12 @@ rtems_ping_t	*pp;
 
 	return errs;
 }
+
+#include <cexpHelp.h>
+CEXP_HELP_TAB_BEGIN(icmpping)
+	HELP(
+"'ping' an IP address and print information to stdout.\n"
+"Roundtrip info is in system 'ticks' only, so far...",
+	int, rtems_ping, (char *ipaddr, int retries)
+	),
+CEXP_HELP_TAB_END

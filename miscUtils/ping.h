@@ -23,7 +23,11 @@ typedef struct rtems_ping
 {
   int                 socket;
   int                 seq;
-  struct sockaddr_in  dest;
+  /* stupid alias rule */
+  union {
+	  struct sockaddr_in  dest_in;
+	  struct sockaddr     dest_sa;
+  }                  dest_u;
   void               *payload;
   size_t              payload_size;
   struct timeval      timeout;
