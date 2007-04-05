@@ -245,3 +245,30 @@ int              flags = 0;
 cleanup:
 	return -1;
 }
+
+#ifdef HAVE_CEXP
+#include <cexpHelp.h>
+CEXP_HELP_TAB_BEGIN(miscNetUtil)
+	HELP(
+        "Configure interface 'name' to use IP address 'addr' and\n"
+		"netmask 'msk' (both strings in IP 'dot' notation) and bring\n"
+		"IF up. 'addr' may be NULL to bring the IF down.\n\n"
+		"RETURNS: zero on success, nonzero on error\n",
+	int, ifconf, (char *nam, char *addr, char *msk_s)
+	),
+	HELP(
+		"Manage routing table entries\n\n"
+		"  'add': add route if nonzero, delete if zero\n"
+        "  'dst': destination/target of route (string in IP dot notation)\n"
+        "         If the destination ANDed with the complement of the netmask\n"
+        "         is empty (zero) the route is treated as a 'net' route\n"
+        "         otherwise as a 'host' route.\n"
+        "  'gwy': gateway (destination reached through 'gwy')\n"
+        "         (string in IP dot notation). May be NULL for ordinary routes.\n"
+        "  'msk': netmask. May be NULL (in this case a default according\n"
+        "         to the class of the 'dst' network will be computed.\n\n"
+		"RETURNS: zero on success, nonzero on error\n",
+	int, rtconf, (int add, char *dst_s, char *gwy_s, char *msk_s)
+	),
+CEXP_HELP_TAB_END
+#endif
