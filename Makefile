@@ -138,7 +138,7 @@ SUBDIRS+=telnetd
 SUBDIRS+=ntpNanoclock
 SUBDIRS+=miscUtils
 
-ifneq ($(filter $(RTEMS_BSP),svgm beatnik)xx,xx)
+ifneq ($(filter $(RTEMS_BSP),svgm beatnik uC5282)xx,xx)
 SUBDIRS+=netboot
 endif
 
