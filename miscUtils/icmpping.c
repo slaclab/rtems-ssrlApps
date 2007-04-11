@@ -39,7 +39,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include "ping.h"
+#include "icmpping.h"
 
 rtems_ping_cfg_t rtems_ping_standard =
 {

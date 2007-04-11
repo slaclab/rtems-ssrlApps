@@ -15,7 +15,7 @@ CC_PIECES=
 CC_FILES=$(CC_PIECES:%=%.cc)
 CC_O_FILES=$(CC_PIECES:%=${ARCH}/%.o)
 
-H_FILES=ping.h
+H_FILES=icmpping.h
 
 # Assembly source names, if any, go here -- minus the .S
 S_PIECES=
@@ -96,12 +96,15 @@ endif
 
 ifndef RTEMS_SITE_INSTALLDIR
 RTEMS_SITE_INSTALLDIR = $(PROJECT_RELEASE)
+INCDIR=$(PROJECT_RELEASE)/lib
+else
+INCDIR=$(RTEMS_SITE_INSTALLDIR)
 endif
 
-${RTEMS_SITE_INSTALLDIR}/include \
+${INCDIR}/include \
 ${RTEMS_SITE_INSTALLDIR}/lib \
 ${RTEMS_SITE_INSTALLDIR}/bin \
-${RTEMS_SITE_INSTALLDIR}/$(RTEMS_BSP)/include \
+${INCDIR}/$(RTEMS_BSP)/include \
 ${RTEMS_SITE_INSTALLDIR}/$(RTEMS_BSP)/lib \
 ${RTEMS_SITE_INSTALLDIR}/$(RTEMS_BSP)/bin :
 	test -d $@ || mkdir -p $@
@@ -118,3 +121,4 @@ ${RTEMS_SITE_INSTALLDIR}/$(RTEMS_BSP)/bin :
 #    below so the essential files get installed. YMMV.
 install:  all $(RTEMS_SITE_INSTALLDIR)/bin
 	$(INSTALL_VARIANT) -m 555 ${PGMS} ${PGMS:%.exe=%.bin} ${PGMS:%.exe=%.sym} ${RTEMS_SITE_INSTALLDIR}/bin
+	$(INSTALL_CHANGE)  -m 444 $(H_FILES) $(INCDIR)/include
