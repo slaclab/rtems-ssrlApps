@@ -108,6 +108,7 @@ cleanup:
 	return rval;
 }
 
+#if defined(RTEMS_BSP_NETWORK_DRIVER_NAME) && defined(RTEMS_BSP_NETWORK_DRIVER_ATTACH)
 /* Attach interface, optionally using given ethernet address
  * (if supported by driver -- some drivers might require the address)
  *
@@ -150,6 +151,7 @@ struct rtems_bsdnet_ifconfig cfg;
 
 	return rval;
 }
+#endif
 
 /* Manage routing table entries
  *
