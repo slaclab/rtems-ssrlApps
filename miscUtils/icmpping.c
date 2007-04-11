@@ -309,11 +309,12 @@ int rtems_ping_close(rtems_ping_t *ping)
   return retval;
 }
 
-int rtems_ping(char *ipaddr, int retries)
+int rtems_ping(char *ipaddr, int nretries, int quiet)
 {
-int             err, errs = 0;
+int             err, errs = 0, retries = nretries;
 in_addr_t ipa = inet_addr(ipaddr);
 rtems_interval  trip;
+unsigned long long atrip = 0;
 rtems_ping_t	*pp;
 
 	if ( INADDR_ANY == ipa ) {
@@ -330,13 +331,17 @@ rtems_ping_t	*pp;
 			fprintf(stderr,"rtems_ping_send: %s\n",strerror(err));
 			errs++;
 		} else {
-			printf("Got reply -- trip time %lu us\n",trip);
+			if ( !quiet )
+				printf("Got reply -- trip time %lu us\n",trip);
+			atrip += trip;
 		}
 	} while ( --retries >= 0 );
 
 	rtems_ping_close(pp);
 
-	return errs;
+	atrip /= nretries;
+
+	return errs ? -errs : (atrip > 0x7fffffff ? 0x7fffffff : (uint32_t)atrip);
 }
 
 #ifdef HAVE_CEXP
@@ -345,6 +350,7 @@ CEXP_HELP_TAB_BEGIN(icmpping)
 	HELP(
 "'ping' an IP address and print information to stdout.\n"
 "(Zero trip times could be due to coarse timer resolution)",
+"RETURNS: trip time (success) or value < 0 (failure)
 	int, rtems_ping, (char *ipaddr, int retries)
 	),
 CEXP_HELP_TAB_END

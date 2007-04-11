@@ -59,8 +59,12 @@ int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time);
 
 int rtems_ping_close(rtems_ping_t *ping);
 
-/* Convenience Wrapper */
-int rtems_ping(char *ip_dot_addr, int retries);
+/* Convenience Wrapper; if 'quiet' is set nothing is printed to stdout
+ *
+ * RETURNS: value < 0 on failure, roundtrip-time (us) on success
+ *
+ */
+int rtems_ping(char *ip_dot_addr, int retries, int quiet);
 
 #ifdef __cplusplus
 }
