@@ -15,6 +15,9 @@
  */
 #ifndef __rtems__
 #include "compat.h"
+#else
+#include <rtems.h>
+#include <rtems/timerdrv.h>
 #endif
 
 #include <stdint.h>
@@ -141,6 +144,28 @@ rtems_ping_t *rtems_ping_open(uint32_t              ip_addr,
   return ping;
 }
 
+#if defined(__rtems__) && (defined(__PPC__) || defined(__mcf528x__))
+#define USE_TIMER
+#define TICKS_PER_S 1000000
+#define US_PER_TICK 1
+#ifdef __PPC__
+/* Unfortunately the PPC Read_timer routine contains an
+ * assert() statement which prevents it from overflowing :-(
+ *
+ * Also, the long-timer apparently returns ns...
+ */
+uint32_t ppc_Read_timer()
+{
+extern unsigned long long Read_long_timer();
+	return (uint32_t)(Read_long_timer() / (uint64_t)1000);
+}
+#define Read_timer() ppc_Read_timer()
+#endif
+#else
+#define TICKS_PER_S _TOD_Ticks_per_second
+#define US_PER_TICK _TOD_Microseconds_per_tick
+#endif
+
 int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
 {
   int                retval;
@@ -155,7 +180,7 @@ int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
   rtems_interval     rcv_time;
   n_short            id = (n_short) (((unsigned long) ping) & 0xffff);
   struct timeval     tv;
-  unsigned long      tps = _TOD_Ticks_per_second;
+  unsigned long      tps = TICKS_PER_S;
   rtems_interval     timeout;
 
   if(!ping) {
@@ -175,12 +200,21 @@ int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
   ping->icmp_req->icmp_cksum = rtems_ping_cksum((uint16_t*)ping->raw_req,
 						ping->req_size);
 
+#ifdef USE_TIMER
+  send_time = Read_timer();
+#else
   /* Get time for ping. */
   (void) rtems_clock_get(RTEMS_CLOCK_GET_TICKS_SINCE_BOOT, &send_time);
+#endif
 
   rcv_time = send_time; /* For first timeout calculation */
+#ifndef USE_TIMER
   timeout = send_time + (ping->timeout.tv_sec * tps) +
     ((ping->timeout.tv_usec * tps) / 1000000);
+#else
+  timeout = send_time + (ping->timeout.tv_sec * tps) +
+    ping->timeout.tv_usec * (tps/1000000);
+#endif
 
   /* Send ping. */
   sent = sendto(ping->socket, ping->raw_req, ping->req_size, 0,
@@ -198,7 +232,7 @@ int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
     rcv_time = timeout - rcv_time;
     /* Set timeout */
     tv.tv_sec  = (rcv_time / tps);
-    tv.tv_usec = (rcv_time % tps) * _TOD_Microseconds_per_tick;
+    tv.tv_usec = (rcv_time % tps) * US_PER_TICK;
     if(setsockopt(ping->socket, SOL_SOCKET,
 		  SO_RCVTIMEO, (char*)&(tv),  sizeof(tv))<0)
     {
@@ -225,7 +259,11 @@ int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
     }
 
     /* Packet received, remember receive time */
+#ifdef USE_TIMER
+	rcv_time = Read_timer();
+#else
     (void) rtems_clock_get(RTEMS_CLOCK_GET_TICKS_SINCE_BOOT, &rcv_time);
+#endif
 
     /* Check if packet is response to our ping */
     if((ping->icmp_resp->icmp_type == ICMP_ECHOREPLY) &&
@@ -235,7 +273,7 @@ int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
     {
       if(trip_time)
       {
-	*trip_time = (rtems_interval)((int)rcv_time - (int)send_time);
+	*trip_time = (rtems_interval)((int)rcv_time - (int)send_time) * US_PER_TICK;
       }
       /* Check if payload matches. */
       retval = (memcmp(ping->icmp_req->icmp_data,
@@ -292,7 +330,7 @@ rtems_ping_t	*pp;
 			fprintf(stderr,"rtems_ping_send: %s\n",strerror(err));
 			errs++;
 		} else {
-			printf("Got reply -- trip time %lu ticks\n",trip);
+			printf("Got reply -- trip time %lu us\n",trip);
 		}
 	} while ( --retries >= 0 );
 
@@ -306,7 +344,7 @@ rtems_ping_t	*pp;
 CEXP_HELP_TAB_BEGIN(icmpping)
 	HELP(
 "'ping' an IP address and print information to stdout.\n"
-"Roundtrip info is in system 'ticks' only, so far...",
+"(Zero trip times could be due to coarse timer resolution)",
 	int, rtems_ping, (char *ipaddr, int retries)
 	),
 CEXP_HELP_TAB_END

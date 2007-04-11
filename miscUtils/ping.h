@@ -54,6 +54,7 @@ extern rtems_ping_cfg_t rtems_ping_standard;
 rtems_ping_t *rtems_ping_open(uint32_t              ip_addr,
 			      const rtems_ping_cfg_t *cfg);
 
+/* trip_time is in microseconds */
 int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time);
 
 int rtems_ping_close(rtems_ping_t *ping);
