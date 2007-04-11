@@ -61,7 +61,13 @@ int rtems_ping_close(rtems_ping_t *ping);
 
 /* Convenience Wrapper; if 'quiet' is set nothing is printed to stdout
  *
- * RETURNS: value < 0 on failure, roundtrip-time (us) on success
+ * RETURNS: 
+ *
+ *   roundtrip-time (us) on success. Always >= 0
+ *
+ *   - number of dropped pings (if at least one dropped ping)
+ *   
+ *   value <= -(retries+2) on networking/system error
  *
  */
 int rtems_ping(char *ip_dot_addr, int retries, int quiet);

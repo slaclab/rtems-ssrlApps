@@ -319,12 +319,12 @@ rtems_ping_t	*pp;
 
 	if ( INADDR_ANY == ipa ) {
 		fprintf(stderr,"rtems_ping: invalid IP addr [dot notation]\n");
-		return -1;
+		return -(nretries+2);
 	}
 
 	if ( ! (pp = rtems_ping_open(ntohl(ipa), 0)) ) {
 		fprintf(stderr,"rtems_ping_open: error\n");
-		return -1;
+		return -(nretries+2);
 	}
 	do {
 		if ( (err = rtems_ping_send(pp, &trip)) ) {
@@ -349,9 +349,9 @@ rtems_ping_t	*pp;
 CEXP_HELP_TAB_BEGIN(icmpping)
 	HELP(
 "'ping' an IP address and print information to stdout.\n"
-"(Zero trip times could be due to coarse timer resolution)",
-"RETURNS: trip time (success) or value < 0 (failure)
-	int, rtems_ping, (char *ipaddr, int retries)
+"(Zero trip times could be due to coarse timer resolution)\n"
+"RETURNS: trip time in us (success) or value < 0 (failure)",
+	int, rtems_ping, (char *ipaddr, int retries, int quiet)
 	),
 CEXP_HELP_TAB_END
 #endif
