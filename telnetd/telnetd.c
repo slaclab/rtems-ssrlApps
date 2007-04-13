@@ -69,7 +69,7 @@ static int sockpeername(int sock, char *buf, int bufsz);
 
 static int initialize_telnetd();
 
-void * telnetd_dflt_spawn(char *name, int priority, int stackSize, rtems_task (*fn)(rtems_task_argument), rtems_task_argument fnarg);
+void * telnetd_dflt_spawn(const char *name, unsigned priority, unsigned stackSize, void (*fn)(void*), void *fnarg);
 
 /***********************************************************/
 rtems_id            telnetd_task_id      =0;
@@ -78,7 +78,7 @@ rtems_task_priority telnetd_task_priority=0;
 int					telnetd_dont_spawn   =0;
 void				(*telnetd_shell)(char *, void*)=0;
 void				*telnetd_shell_arg	 =0;
-void *				(*telnetd_spawn_task)(char *, int, int, rtems_task (*)(rtems_task_argument), rtems_task_argument) = telnetd_dflt_spawn;
+void *				(*telnetd_spawn_task)(const char *, unsigned, unsigned, void (*)(void*), void *) = telnetd_dflt_spawn;
 
 static char *grab_a_Connection(int des_socket, uni_sa *srv, char *peername, int sz)
 {
@@ -166,12 +166,12 @@ int		rval = sock < 0;
 #endif
 
 
-static rtems_task
-spawned_shell(rtems_task_argument arg);
+static void
+spawned_shell(void *arg);
 
 /***********************************************************/
-static rtems_task
-rtems_task_telnetd(rtems_task_argument task_argument)
+static void
+rtems_task_telnetd(void *task_argument)
 {
 int					des_socket;
 uni_sa				srv;
@@ -226,7 +226,7 @@ struct shell_args	*arg;
 		arg->arg = telnetd_shell_arg;
 		strncpy(arg->peername, peername, sizeof(arg->peername));
 
-		if ( !telnetd_spawn_task(&devname[5], telnetd_task_priority, telnetd_stack_size, spawned_shell, (rtems_task_argument)arg) ) {
+		if ( !telnetd_spawn_task(&devname[5], telnetd_task_priority, telnetd_stack_size, spawned_shell, arg) ) {
 
 			FILE *dummy;
 
@@ -314,14 +314,14 @@ int startTelnetd(void (*cmd)(char *, void *), void *arg, int dontSpawn, int stac
 }
 
 /* utility wrapper */
-static rtems_task
-spawned_shell(rtems_task_argument targ)
+static void
+spawned_shell(void *targ)
 {
 rtems_status_code	sc;
 FILE				*nstd[3]={0};
 FILE				*ostd[3]={ stdin, stdout, stderr };
 int					i=0;
-struct shell_args	*arg = (struct shell_args *)targ;
+struct shell_args	*arg = targ;
 
 	sc=rtems_libio_set_private_env();
 
@@ -372,16 +372,16 @@ cleanup:
 }
 
 struct wrap_delete_args {
-	rtems_task (*t)(rtems_task_argument);
-	rtems_task_argument a;
+	void (*t)(void *);
+	void           *a;
 };
 
-static void
+static rtems_task
 wrap_delete(rtems_task_argument arg)
 {
-struct wrap_delete_args      *pwa = (struct wrap_delete_args *)arg;
-register rtems_task          (*t)(rtems_task_argument) = pwa->t;
-register rtems_task_argument a    = pwa->a;
+struct wrap_delete_args     *pwa = (struct wrap_delete_args *)arg;
+register void              (*t)(void *) = pwa->t;
+register void               *a   = pwa->a;
 
 	/* free argument before calling function (which may never return if
 	 * they choose to delete themselves)
@@ -392,7 +392,7 @@ register rtems_task_argument a    = pwa->a;
 }
 
 void *
-telnetd_dflt_spawn(char *name, int priority, int stackSize, rtems_task (*fn)(rtems_task_argument), rtems_task_argument fnarg)
+telnetd_dflt_spawn(const char *name, unsigned int priority, unsigned int stackSize, void (*fn)(void *), void* fnarg)
 {
 rtems_status_code sc;
 rtems_id          task_id;
@@ -411,7 +411,7 @@ struct wrap_delete_args *pwa = malloc(sizeof(*pwa));
 
 		if ((sc=rtems_task_create(
 				rtems_build_name(nm[0], nm[1], nm[2], nm[3]),
-				priority,
+				(rtems_task_priority)priority,
 				stackSize,
 				RTEMS_DEFAULT_MODES,
 				RTEMS_DEFAULT_ATTRIBUTES | RTEMS_FLOATING_POINT,
