@@ -1,0 +1,7 @@
+Note that the files in this directory (rtems-telnetd) are
+released under differing licenses. Consult the individual
+files for details:
+	pty.c, telnetd.c: RTEMS license (GPL 2 with exception)
+	des.c:            freebsd
+	others:           SLAC disclaimer of copyright
+T.S, 2007

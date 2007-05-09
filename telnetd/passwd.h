@@ -18,6 +18,8 @@
  *
  *  - if no password is defined here, no authentication
  *    is needed, i.e. telnet is open to the world.
+ *
+ *    T. Straumann <strauman@slac.stanford.edu>
  */
 
 /* #undef TELNETD_DEFAULT_PASSWD */

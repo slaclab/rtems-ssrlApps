@@ -1,3 +1,8 @@
+/* $Id$ */
+
+/* cexpsh loadable module support */
+
+/* T. Straumann <strauman@slac.stanford.edu>, 2003-2007 */
 #include <cexp.h>
 
 int startTelnetd(void (*cmd)(char *, void *), void *arg, int dontSpawn, int stack, int priority);
