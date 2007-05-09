@@ -1,6 +1,12 @@
  Changes since telnetd-1.2:
   - use union around sockaddr_in/sockaddr to silence 'type-punned pointer'
     warnings.
+  - added wrapper around task creation (task that runs the shell). This
+    wrapper can be changed by the user (telnetd_spawn_task pointer variable).
+	Mostly useful to install 'epicsThreadCreate' here [interface miraculously
+	matches this] so that the EPICS iocsh can be run from a telnet session.
+	(Many EPICS commands assume they are run from an 'epicsThread' which
+	has extra context information not present on native RTEMS threads.)
 
  Changes since telnetd-1.0:
 
