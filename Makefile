@@ -99,9 +99,11 @@ AUTOCONFSUBDIRS+=cexp
 
 #SUBDIRS+=$(subst clean-recursive,.,$(filter clean-recursive,$@))
 
-# libbspExt supported only on our PPC BSPs
-ifeq ($(RTEMS_CPU),powerpc)
+ifneq ($(filter $(RTEMS_CPU),powerpc i386)xx,xx)
 SUBDIRS+=libbspExt
+endif
+
+ifeq ($(RTEMS_CPU),powerpc)
 SUBDIRS+=altivec
 ifneq ($(RTEMS_BSP),psim)
 SUBDIRS+=efence
