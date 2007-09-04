@@ -288,7 +288,7 @@ static int initialize_telnetd(void) {
 	if (telnetd_task_id         ) return RTEMS_RESOURCE_IN_USE;
 	if (telnetd_stack_size<=0   ) telnetd_stack_size   =32000;
 
-	if ( !telnetd_spawn_task("TNTD", telnetd_task_priority, RTEMS_MINIMUM_STACK_SIZE, rtems_task_telnetd, 0) ) {
+	if ( !telnetd_spawn_task("TNTD", telnetd_task_priority, (telnetd_dont_spawn ? telnetd_stack_size : RTEMS_MINIMUM_STACK_SIZE), rtems_task_telnetd, 0) ) {
 		return -1;	
 	}
 	return 0;

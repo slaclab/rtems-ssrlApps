@@ -1,4 +1,5 @@
  Changes since telnetd-1.3:
+  - use telnetd_stack_size if telnetd_dont_spawn is set.
  Changes since telnetd-1.2:
   - use union around sockaddr_in/sockaddr to silence 'type-punned pointer'
     warnings.
