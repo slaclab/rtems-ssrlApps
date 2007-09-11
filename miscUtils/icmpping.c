@@ -339,7 +339,7 @@ rtems_ping_t	*pp;
 
 	rtems_ping_close(pp);
 
-	atrip /= nretries;
+	atrip /= (nretries+1);
 
 	return errs ? -errs : (atrip > 0x7fffffff ? 0x7fffffff : (uint32_t)atrip);
 }
