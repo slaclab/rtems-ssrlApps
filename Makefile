@@ -101,6 +101,7 @@ AUTOCONFSUBDIRS+=cexp
 
 ifneq ($(filter $(RTEMS_CPU),powerpc i386)xx,xx)
 SUBDIRS+=libbspExt
+SUBDIRS+=bsd_eth_drivers
 endif
 
 ifeq ($(RTEMS_CPU),powerpc)
