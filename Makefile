@@ -101,7 +101,9 @@ AUTOCONFSUBDIRS+=cexp
 
 ifneq ($(filter $(RTEMS_CPU),powerpc i386)xx,xx)
 SUBDIRS+=libbspExt
+ifneq ($(RTEMS_BSP),psim)
 SUBDIRS+=bsd_eth_drivers
+endif
 endif
 
 ifeq ($(RTEMS_CPU),powerpc)
@@ -153,7 +155,7 @@ INSTSUBDIRS+=/lib
 
 INSTDIRS = $(addprefix $(RTEMS_SITE_INSTALLDIR),$(INSTSUBDIRS))
 
-BUILDEXT  = $(RTEMS_CPU)-build
+BUILDEXT  = $(RTEMS_CPU)-$(RTEMS_BSP)-build
 
 BUILDDIRS = $(filter %.$(BUILDEXT),$(SUBDIRS))
 
