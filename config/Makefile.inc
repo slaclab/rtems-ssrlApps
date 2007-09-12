@@ -7,7 +7,7 @@
 
 #### CD specific settings
 #set version
-RTEMS_WHICH        = 4.6.5
+RTEMS_WHICH        = 4.7.1
 # define a variable for the CD topdir
 RTEMS_CD_TOP       = /afs/slac/package/rtems/$(RTEMS_WHICH)
 #where to pick up RTEMS (installation)
