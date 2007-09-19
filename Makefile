@@ -77,6 +77,7 @@ all: error
 # see below)
 
 AUTOCONFSUBDIRS+=cexp
+ALLSUBDIRS     +=cexp
 
 #
 # Add applications subdirectories at the
@@ -105,6 +106,8 @@ ifneq ($(RTEMS_BSP),psim)
 SUBDIRS+=bsd_eth_drivers
 endif
 endif
+ALLSUBDIRS     +=libbspExt
+ALLSUBDIRS     +=bsd_eth_drivers
 
 ifeq ($(RTEMS_CPU),powerpc)
 SUBDIRS+=altivec
@@ -112,14 +115,18 @@ ifneq ($(RTEMS_BSP),psim)
 SUBDIRS+=efence
 endif
 endif
+ALLSUBDIRS     +=altivec
+ALLSUBDIRS     +=efence
 
 ifneq ($(filter $(RTEMS_CPU),powerpc i386 m68k)xx,xx)
 SUBDIRS+=rtems-gdb-stub
 endif
+ALLSUBDIRS     +=rtems-gdb-stub
 
 ifeq ($(RTEMS_BSP),uC5282)
 SUBDIRS+=coldfUtils
 endif
+ALLSUBDIRS     +=coldfUtils
 
 SUBDIRS+=cexp.$(BUILDEXT)
 
@@ -128,26 +135,36 @@ SUBDIRS+=cexp.$(BUILDEXT)
 ifneq ($(filter $(RTEMS_BSP),svgm beatnik)xx,xx)
 SUBDIRS+=amdeth
 endif
+ALLSUBDIRS     +=amdeth
 
 ifneq ($(filter $(RTEMS_BSP),beatnik uC5282)xx,xx)
 SUBDIRS+=drvLan9118
 endif
+ALLSUBDIRS     +=drvLan9118
 
 ifneq ($(filter $(RTEMS_BSP),svgm beatnik uC5282)xx,xx)
 SUBDIRS+=svgmWatchdog
 endif
+ALLSUBDIRS     +=svgmWatchdog
 
-SUBDIRS+=rtemsNfs
-SUBDIRS+=monitor
-SUBDIRS+=telnetd
-SUBDIRS+=ntpNanoclock
-SUBDIRS+=miscUtils
+SUBDIRS        +=rtemsNfs
+ALLSUBDIRS     +=rtemsNfs
+SUBDIRS        +=monitor
+ALLSUBDIRS     +=monitor
+SUBDIRS        +=telnetd
+ALLSUBDIRS     +=telnetd
+SUBDIRS        +=ntpNanoclock
+ALLSUBDIRS     +=ntpNanoclock
+SUBDIRS        +=miscUtils
+ALLSUBDIRS     +=miscUtils
 
 ifneq ($(filter $(RTEMS_BSP),svgm beatnik uC5282)xx,xx)
 SUBDIRS+=netboot
 endif
+ALLSUBDIRS     +=netboot
 
 SUBDIRS+=system
+ALLSUBDIRS     +=system
 
 INSTSUBDIRS+=/bin
 INSTSUBDIRS+=/include
@@ -161,7 +178,7 @@ BUILDDIRS = $(filter %.$(BUILDEXT),$(SUBDIRS))
 
 # we simply delete these, no need to recurse into the build
 # directories
-distclean: SUBDIRS:=$(filter-out %.$(BUILDEXT),$(SUBDIRS))
+distclean: SUBDIRS:=$(ALLSUBDIRS)
 
 # only cleanup existing build directories
 clean: SUBDIRS:=$(foreach dir,$(SUBDIRS),$(wildcard $(dir)))
@@ -206,7 +223,7 @@ REVISION=$(filter-out $$%,$$Name$$)
 tar:
 	@$(make-tar)
 
-CLOBBER_ADDITIONS+=$(BUILDDIRS)
+CLOBBER_ADDITIONS+=$(wildcard $(AUTOCONFSUBDIRS).*-build)
 
 ifndef RTEMS_SITE_DOCDIR
 RTEMS_SITE_DOCDIR=$(RTEMS_SITE_DIR)
@@ -230,3 +247,6 @@ endif
 
 $(INSTDIRS) $(RTEMS_SITE_DIR):
 	$(MKDIR) -p $@
+
+test:
+	echo $(CLOBBER_ADDITIONS)
