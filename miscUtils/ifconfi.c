@@ -108,7 +108,6 @@ cleanup:
 	return rval;
 }
 
-#if defined(RTEMS_BSP_NETWORK_DRIVER_NAME) && defined(RTEMS_BSP_NETWORK_DRIVER_ATTACH)
 /* Attach interface, optionally using given ethernet address
  * (if supported by driver -- some drivers might require the address)
  *
@@ -119,15 +118,20 @@ cleanup:
  * RETURNS: 0 on success, nonzero on error.
  */
 int
-ifattach(char *name, uint8_t *enet_addr)
+ifattach(char *name, int (*attach_fn)(struct rtems_bsdnet_ifconfig *,int), uint8_t *enet_addr)
 {
 int                          rval;
 struct rtems_bsdnet_ifconfig cfg;
 
 	memset(&cfg, 0, sizeof(cfg));
 
-	cfg.name   = name ? name : RTEMS_BSP_NETWORK_DRIVER_NAME;
-	cfg.attach = RTEMS_BSP_NETWORK_DRIVER_ATTACH;
+	if ( !name ) {
+		fprintf(stderr,"Usage: ifattach(char *drv_name, int (*drv_attach_fn)(struct rtems_bsdnet_ifconfig *, int), uint8_t *enet_addr)\n");
+		return -1;
+	}
+
+	cfg.name   = name;
+	cfg.attach = attach_fn;
 	cfg.next   = 0;
 	/* configure the interface later */
 	cfg.ip_address = 0;
@@ -151,7 +155,6 @@ struct rtems_bsdnet_ifconfig cfg;
 
 	return rval;
 }
-#endif
 
 /* Manage routing table entries
  *
