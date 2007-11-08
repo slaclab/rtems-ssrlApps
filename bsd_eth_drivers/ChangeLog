@@ -1,5 +1,7 @@
 	2007/11/07 (TS)
 	- added ChangeLog
+	- moved arp_ifinit from libbsdport.h to libbsdport_post.h
+	- replaced inport_xxx/outport_xxx by in_xxx/out_xxx and _IO_BASE
 	- bookE has not mftb instruction :-( we must use mfspr
 	  (but that wouldn't work on classic ppc if we were not
 	  in supervisory mode).
