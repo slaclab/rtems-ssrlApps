@@ -1,0 +1,7 @@
+	2007/11/07 (TS)
+	- added ChangeLog
+	- bookE has not mftb instruction :-( we must use mfspr
+	  (but that wouldn't work on classic ppc if we were not
+	  in supervisory mode).
+	- type adaptions in libbsdport.h to protect us against
+	  alias rule and to silence warnings.
