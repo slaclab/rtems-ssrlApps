@@ -4,6 +4,17 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <rtems.h>
+
+#if ! defined( __RTEMS_MAJOR__ ) || ! defined( __RTEMS_MINOR__ ) || ! defined( __RTEMS_REVISION__ )
+#error "missing __RTEMS_MAJOR__ & friends -- did you include <rtems.h>" ?
+#endif
+#define ISMINVERSION(ma,mi,re) \
+	(    __RTEMS_MAJOR__  > (ma)	\
+	 || (__RTEMS_MAJOR__ == (ma) && __RTEMS_MINOR__  > (mi))	\
+	 || (__RTEMS_MAJOR__ == (ma) && __RTEMS_MINOR__ == (mi) && __RTEMS_REVISION__ >= (re)) \
+    )
+
 /* miscellaneous memory utilities (dump, modify, ... )
  * as a CEXP loadable module.
  * Author: Till Straumann 2005/4
@@ -255,18 +266,21 @@ char *szstr;
 	return 0;
 }
 
-#if 0 /* in libcpu support now */
+#if !ISMINVERSION(4,7,0)
 int getdbat(unsigned i)
 {
 return pbat(i,1);
 }
 #endif
 
+#if !ISMINVERSION(4,8,99)
 int getibat(unsigned i)
 {
 return pbat(i,0);
 }
 #endif
+
+#endif /* __PPC__ */
 
 #if !defined(MAIN)
 #ifdef HAVE_CEXP
@@ -290,21 +304,22 @@ CEXP_HELP_TAB_BEGIN(memutils)
 		int, coredump, (char *filename, unsigned start_addr, unsigned size, int forceWrite)
 	),
 #ifdef __PPC__
-#if 0
+#if !ISMINVERSION(4,7,0)
 	HELP(
 "Display Data BAT register i (0..3)\n",
 		int, getdbat, (unsigned batno)
 	),
 #endif
+#if !ISMINVERSION(4,8,99)
 	HELP(
 "Display Instruction BAT register i (0..3)\n",
 		int, getibat, (unsigned batno)
 	),
 #endif
+#endif
 CEXP_HELP_TAB_END
 #endif
 #endif
-
 
 
 #ifdef MAIN
