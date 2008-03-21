@@ -28,7 +28,11 @@ typedef rtems_monitor_command_arg_t monfargt;
 #define CMD2ARG(cmd) ((cmd)->command_arg)
 #endif
 
-#if ISMINVERSION(4,6,99) && 0
+#if ISMINVERSION(4,8,99)
+#define rtems_get_node rtems_object_id_get_node
+#endif
+
+#if ISMINVERSION(4,8,0)
 /* BAD: somewhere along the line the API for cpuuse was changed :-( but there
  * was no change in the RTEMS version numbers, so you might have
  * to tune things up here manually...
@@ -75,11 +79,11 @@ if ( argc > 0 ) {
 class command_entry_builder : public rtems_monitor_command_entry_t {
 public:
 	command_entry_builder(
-		char *name, char *help, unsigned args_req, 
+		const char *name, const char *help, unsigned args_req, 
 		void *fp)
 		{
-		command                  = name;
-		usage                    = help;
+		command                  = (char*)name;
+		usage                    = (char*)help;
 		arguments_required       = args_req;
 		command_function         = (rtems_monitor_command_function_t)fnwrap;
 #if ISMINVERSION(4,6,99)
@@ -198,7 +202,7 @@ cleanup:
 
 
 #ifdef __cplusplus
-
+};
 
 class CallUtils {
 public:
@@ -229,5 +233,4 @@ static CallUtils oneOnly;
 
 int CallUtils::nest=0;
 
-};
 #endif

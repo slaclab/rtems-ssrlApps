@@ -44,7 +44,7 @@ include $(RTEMS_ROOT)/make/leaf.cfg
 
 DEFINES  +=
 
-CPPFLAGS += -I. -I/afs/slac/package/rtems/prod/rtems/powerpc-rtems/include 
+CPPFLAGS += -I.
 CFLAGS   += -O2
 
 #
