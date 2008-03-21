@@ -35,7 +35,7 @@ CC_FOR_BUILD = $(HOSTCC)
 export CC_FOR_BUILD
 #
 ifndef RTEMS_MAKEFILE_PATH
-$(error RTEMS_MAKEFILE_PATH not set - must point to ssrlApplications config dir)
+$(error $@: RTEMS_MAKEFILE_PATH not set - must point to ssrlApplications config dir)
 endif
 include $(RTEMS_MAKEFILE_PATH)/Makefile.inc
 # we want RTEMS_BSP_FAMILY and RTEMS_CPU now
@@ -110,8 +110,12 @@ ALLSUBDIRS     +=libbspExt
 ALLSUBDIRS     +=bsd_eth_drivers
 
 ifeq ($(RTEMS_CPU),powerpc)
+# need a G4
+ifneq ($(filter $(RTEMS_BSP),mvme5500 svgm beatnik)xx,xx)
 SUBDIRS+=altivec
-ifneq ($(RTEMS_BSP),psim)
+endif
+# need a 604 with hardware page-tables
+ifneq ($(filter $(RTEMS_BSP),mvme5500 svgm beatnik mvme2307)xx,xx)
 SUBDIRS+=efence
 endif
 endif
@@ -132,7 +136,7 @@ SUBDIRS+=cexp.$(BUILDEXT)
 
 # apps below here depend on cexp and/or tecla and hence
 # are made later
-ifneq ($(filter $(RTEMS_BSP),svgm beatnik)xx,xx)
+ifneq ($(filter $(RTEMS_BSP_FAMILY),svgm beatnik mvme3100 pc386)xx,xx)
 SUBDIRS+=amdeth
 endif
 ALLSUBDIRS     +=amdeth
@@ -142,7 +146,7 @@ SUBDIRS+=drvLan9118
 endif
 ALLSUBDIRS     +=drvLan9118
 
-ifneq ($(filter $(RTEMS_BSP),svgm beatnik uC5282)xx,xx)
+ifneq ($(filter $(RTEMS_BSP),svgm beatnik uC5282 mvme3100)xx,xx)
 SUBDIRS+=svgmWatchdog
 endif
 ALLSUBDIRS     +=svgmWatchdog
@@ -158,7 +162,7 @@ ALLSUBDIRS     +=ntpNanoclock
 SUBDIRS        +=miscUtils
 ALLSUBDIRS     +=miscUtils
 
-ifneq ($(filter $(RTEMS_BSP),svgm beatnik uC5282)xx,xx)
+ifneq ($(filter $(RTEMS_BSP),svgm beatnik uC5282 mvme3100)xx,xx)
 SUBDIRS+=netboot
 endif
 ALLSUBDIRS     +=netboot
@@ -237,13 +241,16 @@ ifndef RTEMS_SITE_INFODIR
 RTEMS_SITE_INFODIR=$(RTEMS_SITE_DOCDIR)/info
 endif
 
+# BUILDARCH var is evaluated by 'make' CWD is where this
+# makefile is executed and unaffected by 'cd' in the
+# commands below...
 ifndef BUILDARCH
-BUILDARCH=$(sh ../$(@:%.$(BUILDEXT)/Makefile=%)/config.guess)
+BUILDARCH=$(shell ./$(@:%.$(BUILDEXT)/Makefile=%)/config.guess)
 endif
 
 %.$(BUILDEXT)/Makefile:
 	test -d $(dir $@) || $(MKDIR) $(dir $@)
-	cd	$(dir $@) ; ../$(@:%.$(BUILDEXT)/Makefile=%)/configure --build=$(BUILDARCH) --host=$(RTEMS_CPU)-rtems --disable-nls --prefix=$(RTEMS_SITE_INSTALLDIR) --mandir=$(RTEMS_SITE_MANDIR) --infodir=$(RTEMS_SITE_INFODIR) --with-newlib CC=$(word 1,$(CC)) CFLAGS="$(CPU_CFLAGS) $(CFLAGS)" CXXFLAGS="$(CPU_CFLAGS) $(CXXFLAGS)" --enable-multilib=no
+	cd	$(dir $@) ; ../$(@:%.$(BUILDEXT)/Makefile=%)/configure --host=$(RTEMS_CPU)-rtems --disable-nls --prefix=$(RTEMS_SITE_INSTALLDIR) --mandir=$(RTEMS_SITE_MANDIR) --infodir=$(RTEMS_SITE_INFODIR) --with-newlib --disable-multilib CC=$(word 1,$(CC)) CFLAGS="$(CPU_CFLAGS) $(CFLAGS)" CFLAGS_FOR_BUILD="" CXXFLAGS="$(CPU_CFLAGS) $(CXXFLAGS)" CXXFLAGS_FOR_BUILD=""
 
 $(INSTDIRS) $(RTEMS_SITE_DIR):
 	$(MKDIR) -p $@
