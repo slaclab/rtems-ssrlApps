@@ -144,7 +144,7 @@ rtems_ping_t *rtems_ping_open(uint32_t              ip_addr,
   return ping;
 }
 
-#if defined(__rtems__) && (defined(__PPC__) || defined(__mcf528x__))
+#if defined(__rtems__) && (defined(__PPC__) || defined(__mcf528x__) || defined(__i386__))
 #define USE_TIMER
 #define TICKS_PER_S 1000000
 #define US_PER_TICK 1
@@ -162,7 +162,8 @@ extern unsigned long long Read_long_timer();
 #define Read_timer() ppc_Read_timer()
 #endif
 #else
-#define TICKS_PER_S _TOD_Ticks_per_second
+#include <rtems/rtems/clock.h>
+#define TICKS_PER_S TOD_TICKS_PER_SECOND
 #define US_PER_TICK _TOD_Microseconds_per_tick
 #endif
 
