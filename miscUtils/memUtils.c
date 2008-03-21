@@ -202,7 +202,8 @@ cleanup:
 	return rval;
 }
 
-#ifdef __PPC__
+#if defined( __PPC__ ) && !ISMINVERSION(4,8,99)
+/* 4.8.99 and upwards have these in libcpu */
 
 #define MFBATS(bat,idx,l,u) __asm__ __volatile__("mf"bat"l %0,%2; mf"bat"u %1,%2":"=r"(l),"=r"(u):"i"(idx),"0"(l),"1"(u))
 static int
@@ -273,14 +274,12 @@ return pbat(i,1);
 }
 #endif
 
-#if !ISMINVERSION(4,8,99)
 int getibat(unsigned i)
 {
 return pbat(i,0);
 }
-#endif
 
-#endif /* __PPC__ */
+#endif /* __PPC__ && rtems version < 4.8.99 */
 
 #if !defined(MAIN)
 #ifdef HAVE_CEXP
