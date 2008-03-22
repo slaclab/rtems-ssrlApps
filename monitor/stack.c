@@ -26,6 +26,9 @@ void				*stackbuf[30];
 int					i;
 Context_Control		regs;
 
+	/* silence compiler warning about unused regs */
+	memset(&regs,0,sizeof(regs));
+
 	tcb = _Thread_Get(id, &loc);
 	if (OBJECTS_LOCAL!=loc || !tcb) {
 		if (tcb)
