@@ -14,6 +14,7 @@
 #include <rtems/bspIo.h>
 #include <rtems/error.h>
 #include <rtems/score/wkspace.h>
+#include <rtems/powerpc/powerpc.h>
 
 #include <stdio.h>
 
@@ -269,6 +270,10 @@ rtems_status_code sc;
 		rtems_error(sc, NAM": unable to create user extension\n");
 		return -1;
 	}
+/* Another rtems API change :-( */
+#ifndef rtems_get_index
+#define rtems_get_index rtems_object_id_get_index
+#endif
 	vec_idx = rtems_get_index(vec_extension_id);
 
 	return 0;
