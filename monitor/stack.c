@@ -3,12 +3,19 @@
 //#include <rtems/score/cpu.h>
 //#include <rtems/score/thread.h>
 #include <stdio.h>
-#ifdef PPC
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#ifdef __PPC__
 #include <libcpu/stackTrace.h>
 #include <stdarg.h>
 #include <string.h>
 #include <assert.h>
+#ifdef HAVE_CEXP
 #include <cexp.h>
+#endif
 #endif
 
 
@@ -101,6 +108,7 @@ Context_Control		regs;
 		unsigned	diff=(unsigned)stackbuf[i];
 		char		buf[250];
 		printf("0x%08x",(unsigned)stackbuf[i]);
+#ifdef HAVE_CEXP
 		if (0==cexpAddrFind(&symaddr,buf,sizeof(buf))) {
 			diff=(unsigned)stackbuf[i]-(unsigned)symaddr;
 			printf(" == <%s",buf);
@@ -109,6 +117,7 @@ Context_Control		regs;
 			}
 			fputc('>',stdout);
 		}
+#endif
 		fputc('\n',stdout);
 	}
 
