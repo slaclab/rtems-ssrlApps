@@ -18,6 +18,10 @@
 
 #include <stdio.h>
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 /* Configurable parameters */
 /* localize symbols */
 #define STATIC
@@ -243,7 +247,12 @@ rtems_status_code sc;
 
 	if ( check_stack_alignment() & 2 )
 		rtems_fatal_error_occurred(ERRID('V','E','C','1'));
-		
+
+#if defined(RTEMS_VERSION_ATLEAST) && RTEMS_VERSION_ATLEAST(4,8,99)
+	if ( ! ppc_cpu_has_altivec() )
+		printk(NAM": This CPU seems not to have AltiVec\n");
+		return -1;
+#else
 	switch ( (pvr=get_ppc_cpu_type()) ) {
 		default:
 			printk(NAM": Not a known AltiVec CPU (PVR id 0x%04x)\n", pvr);
@@ -254,6 +263,7 @@ rtems_status_code sc;
 		case PPC_7457:
 		break;
 	}
+#endif
 #ifdef ALL_THREADS_ALTIVEC
 	if ( ! (mfmsr() & MSR_VE) ) {
 		printk(NAM": Warning: BSP should set MSR_VE early; doing it now...\n");
