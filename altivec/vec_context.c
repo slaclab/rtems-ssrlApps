@@ -248,7 +248,11 @@ rtems_status_code sc;
 	if ( check_stack_alignment() & 2 )
 		rtems_fatal_error_occurred(ERRID('V','E','C','1'));
 
-#if defined(RTEMS_VERSION_ATLEAST) && RTEMS_VERSION_ATLEAST(4,8,99)
+#ifndef RTEMS_VERSION_ATLEAST
+#define RTEMS_VERSION_ATLEAST(M,m,r) 0
+#endif
+
+#if RTEMS_VERSION_ATLEAST(4,8,99)
 	if ( ! ppc_cpu_has_altivec() )
 		printk(NAM": This CPU seems not to have AltiVec\n");
 		return -1;
