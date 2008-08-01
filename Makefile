@@ -151,8 +151,9 @@ SUBDIRS+=svgmWatchdog
 endif
 ALLSUBDIRS     +=svgmWatchdog
 
-SUBDIRS        +=rtemsNfs
-ALLSUBDIRS     +=rtemsNfs
+#NFS is now a part of RTEMS
+#SUBDIRS        +=rtemsNfs
+#ALLSUBDIRS     +=rtemsNfs
 SUBDIRS        +=monitor
 ALLSUBDIRS     +=monitor
 SUBDIRS        +=telnetd
