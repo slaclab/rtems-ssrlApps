@@ -7,7 +7,7 @@
 
 #### CD specific settings
 #set version
-RTEMS_WHICH        = 4.7.1
+RTEMS_WHICH        = 4.9
 # define a variable for the CD topdir
 RTEMS_CD_TOP       = /afs/slac/package/rtems/$(RTEMS_WHICH)
 #where to pick up RTEMS (installation)
@@ -26,7 +26,7 @@ RTEMS_BASE         = $(RTEMS_CD_TOP)/host/$(RTEMS_HOST_ARCH)
 #
 #where to install ssrl applications (into the 'target' area)
 #RTEMS_SSRLAPPS_DIR = $(RTEMS_TOP)/ssrlApps-test
-RTEMS_SSRLAPPS_DIR = $(RTEMS_TOP)/ssrlApps
+RTEMS_SSRLAPPS_DIR = $(RTEMS_TOP)/ssrlApps.new
 
 #where to install documentation 
 RTEMS_SITE_DOCDIR  = $(RTEMS_CD_TOP)/doc
