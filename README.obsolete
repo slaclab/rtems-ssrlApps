@@ -1,5 +1,14 @@
 HOW TO BUILD THE SSRL RTEMS-APPLICATIONS
+
 $Id$
+
+*************************************************************
+IMPORTANT NOTE: These instructions describe building ssrlApps
+                with the old, deprecated makefile system.
+
+				The INSTALL file covers building ssrlApps with
+				using the new, GNU-automake based system.
+*************************************************************
 
 Till Straumann, 2003/4/10, 2006/07/27
 
