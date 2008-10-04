@@ -144,7 +144,11 @@ rtems_ping_t *rtems_ping_open(uint32_t              ip_addr,
   return ping;
 }
 
-#if defined(__rtems__) && (defined(__PPC__) || defined(__mcf528x__) || defined(__i386__))
+/* Disable for now; Read_timer is not really portable nor implemented
+ * by most CPUs; i386 version was renamed and is not ticking in ns
+ * anyways...
+ */
+#if defined(__rtems__) && (defined(__PPC__) || defined(__mcf528x__) || defined(__i386__)) && 0
 #define USE_TIMER
 #define TICKS_PER_S 1000000
 #define US_PER_TICK 1
