@@ -30,6 +30,8 @@ typedef rtems_monitor_command_arg_t monfargt;
 
 #if ISMINVERSION(4,8,99)
 #define rtems_get_node rtems_object_id_get_node
+#else
+#define bool boolean
 #endif
 
 #if ISMINVERSION(4,8,0)
@@ -52,7 +54,7 @@ int
 memUsageDump(void);
 
 static void
-fnwrap(int argc, char **argv, monfargt arg, boolean verbose)
+fnwrap(int argc, char **argv, monfargt arg, bool verbose)
 {
 unsigned long	iarg;
 char			*endp;
