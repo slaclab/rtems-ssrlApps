@@ -213,6 +213,9 @@ prep:
 include $(RTEMS_ROOT)/make/directory.cfg
 include $(CONFIG.CC)
 
+# add tool path so that tools are found by 'configure' and sub-makes
+PATH:=$(RTEMS_BASE)/bin:$(PATH)
+
 # install 'config' to the install area
 install-config: $(RTEMS_SITE_DIR)
 	if [ `pwd` != `(cd $<; pwd)` ] ; then 			\
@@ -248,6 +251,13 @@ ifndef BUILDARCH
 BUILDARCH=$(shell ./$(@:%.$(BUILDEXT)/Makefile=%)/config.guess)
 endif
 
+cexp.$(BUILDEXT)/Makefile:
+	test -d $(dir $@) || $(MKDIR) $(dir $@)
+	cd	$(dir $@) ;  \
+	unset CC CFLAGS CXX CXXFLAGS CPPFLAGS LDFLAGS ; \
+	../$(@:%.$(BUILDEXT)/Makefile=%)/configure --host=$(RTEMS_CPU)-rtems --disable-nls --prefix=$(RTEMS_SITE_INSTALLDIR) --mandir=$(RTEMS_SITE_MANDIR) --infodir=$(RTEMS_SITE_INFODIR) --with-newlib --disable-multilib --with-rtems-top=$(RTEMS_TOP) --enable-rtemsbsp=$(RTEMS_BSP)
+
+
 %.$(BUILDEXT)/Makefile:
 	test -d $(dir $@) || $(MKDIR) $(dir $@)
 	cd	$(dir $@) ; ../$(@:%.$(BUILDEXT)/Makefile=%)/configure --host=$(RTEMS_CPU)-rtems --disable-nls --prefix=$(RTEMS_SITE_INSTALLDIR) --mandir=$(RTEMS_SITE_MANDIR) --infodir=$(RTEMS_SITE_INFODIR) --with-newlib --disable-multilib CC=$(word 1,$(CC)) CFLAGS="$(CPU_CFLAGS) $(CFLAGS)" CFLAGS_FOR_BUILD="" CXXFLAGS="$(CPU_CFLAGS) $(CXXFLAGS)" CXXFLAGS_FOR_BUILD=""
@@ -256,4 +266,4 @@ $(INSTDIRS) $(RTEMS_SITE_DIR):
 	$(MKDIR) -p $@
 
 test:
-	echo $(CLOBBER_ADDITIONS)
+	echo $(CC)
