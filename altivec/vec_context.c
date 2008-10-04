@@ -22,6 +22,12 @@
 #include <config.h>
 #endif
 
+#if defined RTEMS_VERSION_LATER_THAN
+#if ! RTEMS_VERSION_LATER_THAN(4,8,99)
+#define bool boolean
+#endif
+#endif
+
 /* Configurable parameters */
 /* localize symbols */
 #define STATIC
@@ -86,7 +92,7 @@ STATIC rtems_tcb * volatile vec_owner        = 0;
 STATIC rtems_id    volatile vec_extension_id = 0;
 STATIC int                  vec_idx          = 0; /* use slot 0 if ALL_THREADS_ALTIVEC */
 
-STATIC boolean vec_thread_create(rtems_tcb *current_task, rtems_tcb *new_task);
+STATIC bool    vec_thread_create(rtems_tcb *current_task, rtems_tcb *new_task);
 STATIC void    vec_thread_start(rtems_tcb *executing, rtems_tcb *startee);
 STATIC void    vec_thread_restart(rtems_tcb *executing, rtems_tcb *restartee);
 STATIC void    vec_thread_delete(rtems_tcb *executing, rtems_tcb *deletee);
@@ -142,7 +148,9 @@ isync()
 static inline void
 dssall()
 {
+#ifndef PSIM
 	asm volatile("dssall");
+#endif
 }
 
 static inline uint32_t
@@ -231,7 +239,6 @@ STATIC int check_vrsave()
 int
 vec_install_extension()
 {
-unsigned          pvr;
 rtems_status_code sc;
 
 	if ( vec_extension_id ) {
@@ -253,10 +260,15 @@ rtems_status_code sc;
 #endif
 
 #if RTEMS_VERSION_ATLEAST(4,8,99)
-	if ( ! ppc_cpu_has_altivec() )
+#ifndef PSIM
+	if ( ! ppc_cpu_has_altivec() ) {
 		printk(NAM": This CPU seems not to have AltiVec\n");
 		return -1;
+	}
+#endif
 #else
+	{
+	unsigned          pvr;
 	switch ( (pvr=get_ppc_cpu_type()) ) {
 		default:
 			printk(NAM": Not a known AltiVec CPU (PVR id 0x%04x)\n", pvr);
@@ -266,6 +278,7 @@ rtems_status_code sc;
 		case PPC_7455:
 		case PPC_7457:
 		break;
+	}
 	}
 #endif
 #ifdef ALL_THREADS_ALTIVEC
@@ -383,7 +396,7 @@ vec_thread_fixup_env(rtems_tcb *thread)
 	*(uint32_t *)thread->Registers.gpr1 = 0;
 }
 
-STATIC boolean
+STATIC bool
 vec_thread_create(rtems_tcb *current_task, rtems_tcb *new_task)
 {
 #ifdef ALL_THREADS_ALTIVEC
@@ -542,7 +555,7 @@ load_vec_context(VecCtxt buf)
 #endif
 		"	mtvrsave 4         \n"
 		"	li     4,12        \n"
-		"	lvewx  0,4,%0      \n"
+		"	lvewx  0,4,%0      \n" 
 		"	mtvscr 0           \n"
 		"	addi   4,4,20      \n"
 		L32VEC(%0,%1,%2,%3,4)
@@ -559,7 +572,9 @@ load_vec_context(VecCtxt buf)
 static inline void
 dst0_new_context(void *ea, uint32_t size, uint32_t count, uint32_t stride)
 {
+#ifndef PSIM
 	asm volatile("dst %0,%1,%2"::"r"(ea),"b"((size<<24)|(count<<16)|stride),"i"(0));
+#endif
 }
 
 STATIC void
