@@ -1,0 +1,1338 @@
+  This patch against gdb-6.8 fixes several bugs in the PSIM
+  simulator's altivec support.
+  A bug-report was filed (with this patch attached) as PR#2461
+  with GDB's bug database.
+
+*** gdb-6.8/sim/ppc/altivec.igen.orig	2008-05-30 01:27:25.000000000 -0700
+--- gdb-6.8/sim/ppc/altivec.igen	2008-05-30 23:27:50.000000000 -0700
+***************
+*** 777,799 ****
+  	unsigned32 f;
+  	sim_fpu b, div, d;
+  	for (i = 0; i < 4; i++) {
+! 	  sim_fpu_32to (&b, (*vB).w[i]);
+! 	  sim_fpu_u32to (&div, 2 << UIMM, sim_fpu_round_default);
+  	  sim_fpu_div (&d, &b, &div);
+  	  sim_fpu_to32 (&f, &d);
+  	  (*vS).w[i] = f;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VB_BITMASK);
+  
+! 0.4,6.VS,11.UIMM,16.VB,21.778:VX:av:vcfux %VD, %VA, %UIMM:Vector Convert From Unsigned Fixed-Point Word
+  	int i;
+  	unsigned32 f;
+  	sim_fpu b, d, div;
+  	for (i = 0; i < 4; i++) {
+! 	  sim_fpu_32to (&b, (*vB).w[i]);
+! 	  sim_fpu_u32to (&div, 2 << UIMM, sim_fpu_round_default);
+  	  sim_fpu_div (&d, &b, &div);
+! 	  sim_fpu_to32u (&f, &d, sim_fpu_round_default);
+  	  (*vS).w[i] = f;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VB_BITMASK);
+--- 777,799 ----
+  	unsigned32 f;
+  	sim_fpu b, div, d;
+  	for (i = 0; i < 4; i++) {
+! 	  sim_fpu_i32to (&b, (*vB).w[i], sim_fpu_round_default);
+! 	  sim_fpu_u32to (&div, 1 << UIMM, sim_fpu_round_default);
+  	  sim_fpu_div (&d, &b, &div);
+  	  sim_fpu_to32 (&f, &d);
+  	  (*vS).w[i] = f;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VB_BITMASK);
+  
+! 0.4,6.VS,11.UIMM,16.VB,21.778:VX:av:vcfux %VD, %VB, %UIMM:Vector Convert From Unsigned Fixed-Point Word
+  	int i;
+  	unsigned32 f;
+  	sim_fpu b, d, div;
+  	for (i = 0; i < 4; i++) {
+! 	  sim_fpu_u32to (&b, (*vB).w[i], sim_fpu_round_default);
+! 	  sim_fpu_u32to (&div, 1 << UIMM, sim_fpu_round_default);
+  	  sim_fpu_div (&d, &b, &div);
+! 	  sim_fpu_to32 (&f, &d);
+  	  (*vS).w[i] = f;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VB_BITMASK);
+***************
+*** 995,1001 ****
+  	sat = 0;
+  	for (i = 0; i < 4; i++) {
+  	  sim_fpu_32to (&b, (*vB).w[i]);
+! 	  sim_fpu_u32to (&m, 2 << UIMM, sim_fpu_round_default);
+  	  sim_fpu_mul (&a, &b, &m);
+  	  sim_fpu_to64i (&temp, &a, sim_fpu_round_default);
+  	  (*vS).w[i] = altivec_signed_saturate_32(temp, &tempsat);
+--- 995,1001 ----
+  	sat = 0;
+  	for (i = 0; i < 4; i++) {
+  	  sim_fpu_32to (&b, (*vB).w[i]);
+! 	  sim_fpu_u32to (&m, 1 << UIMM, sim_fpu_round_default);
+  	  sim_fpu_mul (&a, &b, &m);
+  	  sim_fpu_to64i (&temp, &a, sim_fpu_round_default);
+  	  (*vS).w[i] = altivec_signed_saturate_32(temp, &tempsat);
+***************
+*** 1011,1017 ****
+  	sat = 0;
+  	for (i = 0; i < 4; i++) {
+  	  sim_fpu_32to (&b, (*vB).w[i]);
+! 	  sim_fpu_u32to (&m, 2 << UIMM, sim_fpu_round_default);
+  	  sim_fpu_mul (&a, &b, &m);
+  	  sim_fpu_to64u (&temp, &a, sim_fpu_round_default);
+  	  (*vS).w[i] = altivec_unsigned_saturate_32(temp, &tempsat);
+--- 1011,1017 ----
+  	sat = 0;
+  	for (i = 0; i < 4; i++) {
+  	  sim_fpu_32to (&b, (*vB).w[i]);
+! 	  sim_fpu_u32to (&m, 1 << UIMM, sim_fpu_round_default);
+  	  sim_fpu_mul (&a, &b, &m);
+  	  sim_fpu_to64u (&temp, &a, sim_fpu_round_default);
+  	  (*vS).w[i] = altivec_unsigned_saturate_32(temp, &tempsat);
+***************
+*** 1331,1380 ****
+  
+  0.4,6.VS,11.VA,16.VB,21.12:VX:av:vmrghb %VD, %VA, %VB:Vector Merge High Byte
+  	int i;
+  	for (i = 0; i < 16; i += 2) {
+! 	  (*vS).b[AV_BINDEX(i)] = (*vA).b[AV_BINDEX(i/2)];
+! 	  (*vS).b[AV_BINDEX(i+1)] = (*vB).b[AV_BINDEX(i/2)]; 
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.76:VX:av:vmrghh %VD, %VA, %VB:Vector Merge High Half Word
+  	int i;
+  	for (i = 0; i < 8; i += 2) {
+! 	  (*vS).h[AV_HINDEX(i)] = (*vA).h[AV_HINDEX(i/2)];
+! 	  (*vS).h[AV_HINDEX(i+1)] = (*vB).h[AV_HINDEX(i/2)]; 
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.140:VX:av:vmrghw %VD, %VA, %VB:Vector Merge High Word
+  	int i;
+  	for (i = 0; i < 4; i += 2) {
+! 	  (*vS).w[i] = (*vA).w[i/2];
+! 	  (*vS).w[i+1] = (*vB).w[i/2]; 
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.268:VX:av:vmrglb %VD, %VA, %VB:Vector Merge Low Byte
+  	int i;
+  	for (i = 0; i < 16; i += 2) {
+! 	  (*vS).b[AV_BINDEX(i)] = (*vA).b[AV_BINDEX((i/2) + 8)];
+! 	  (*vS).b[AV_BINDEX(i+1)] = (*vB).b[AV_BINDEX((i/2) + 8)]; 
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.332:VX:av:vmrglh %VD, %VA, %VB:Vector Merge Low Half Word
+  	int i;
+  	for (i = 0; i < 8; i += 2) {
+! 	  (*vS).h[AV_HINDEX(i)] = (*vA).h[AV_HINDEX((i/2) + 4)];
+! 	  (*vS).h[AV_HINDEX(i+1)] = (*vB).h[AV_HINDEX((i/2) + 4)]; 
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.396:VX:av:vmrglw %VD, %VA, %VB:Vector Merge Low Word
+  	int i;
+  	for (i = 0; i < 4; i += 2) {
+! 	  (*vS).w[i] = (*vA).w[(i/2) + 2];
+! 	  (*vS).w[i+1] = (*vB).w[(i/2) + 2]; 
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  
+--- 1331,1392 ----
+  
+  0.4,6.VS,11.VA,16.VB,21.12:VX:av:vmrghb %VD, %VA, %VB:Vector Merge High Byte
+  	int i;
++ 	vreg vStmp;
+  	for (i = 0; i < 16; i += 2) {
+! 	  vStmp.b[AV_BINDEX(i)] = (*vA).b[AV_BINDEX(i/2)];
+! 	  vStmp.b[AV_BINDEX(i+1)] = (*vB).b[AV_BINDEX(i/2)]; 
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.76:VX:av:vmrghh %VD, %VA, %VB:Vector Merge High Half Word
+  	int i;
++ 	vreg vStmp;
+  	for (i = 0; i < 8; i += 2) {
+! 	  vStmp.h[AV_HINDEX(i)] = (*vA).h[AV_HINDEX(i/2)];
+! 	  vStmp.h[AV_HINDEX(i+1)] = (*vB).h[AV_HINDEX(i/2)]; 
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.140:VX:av:vmrghw %VD, %VA, %VB:Vector Merge High Word
+  	int i;
++ 	vreg vStmp;
+  	for (i = 0; i < 4; i += 2) {
+! 	  vStmp.w[i] = (*vA).w[i/2];
+! 	  vStmp.w[i+1] = (*vB).w[i/2]; 
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.268:VX:av:vmrglb %VD, %VA, %VB:Vector Merge Low Byte
+  	int i;
++ 	vreg vStmp;
+  	for (i = 0; i < 16; i += 2) {
+! 	  vStmp.b[AV_BINDEX(i)] = (*vA).b[AV_BINDEX((i/2) + 8)];
+! 	  vStmp.b[AV_BINDEX(i+1)] = (*vB).b[AV_BINDEX((i/2) + 8)]; 
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.332:VX:av:vmrglh %VD, %VA, %VB:Vector Merge Low Half Word
+  	int i;
++ 	vreg vStmp;
+  	for (i = 0; i < 8; i += 2) {
+! 	  vStmp.h[AV_HINDEX(i)] = (*vA).h[AV_HINDEX((i/2) + 4)];
+! 	  vStmp.h[AV_HINDEX(i+1)] = (*vB).h[AV_HINDEX((i/2) + 4)]; 
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.396:VX:av:vmrglw %VD, %VA, %VB:Vector Merge Low Word
+  	int i;
++ 	vreg vStmp;
+  	for (i = 0; i < 4; i += 2) {
+! 	  vStmp.w[i] = (*vA).w[(i/2) + 2];
+! 	  vStmp.w[i+1] = (*vB).w[(i/2) + 2]; 
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  
+***************
+*** 1387,1392 ****
+--- 1399,1405 ----
+  	signed32 temp;
+  	signed16 prod, a;
+  	unsigned16 b;
++ 	vreg vStmp;
+  	for (i = 0; i < 4; i++) {
+  	  temp = (*vC).w[i];
+  	  for (j = 0; j < 4; j++) {
+***************
+*** 1395,1407 ****
+  	    prod = a * b;
+  	    temp += (signed32)prod;
+  	  }
+! 	  (*vS).w[i] = temp;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK | VC_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.VC,26.40:VAX:av:vmsumshm %VD, %VA, %VB, %VC:Vector Multiply Sum Signed Half Word Modulo
+  	int i, j;
+  	signed32 temp, prod, a, b;
+  	for (i = 0; i < 4; i++) {
+  	  temp = (*vC).w[i];
+  	  for (j = 0; j < 2; j++) {
+--- 1408,1422 ----
+  	    prod = a * b;
+  	    temp += (signed32)prod;
+  	  }
+! 	  vStmp.w[i] = temp;
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK | VC_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.VC,26.40:VAX:av:vmsumshm %VD, %VA, %VB, %VC:Vector Multiply Sum Signed Half Word Modulo
+  	int i, j;
+  	signed32 temp, prod, a, b;
++ 	vreg vStmp;
+  	for (i = 0; i < 4; i++) {
+  	  temp = (*vC).w[i];
+  	  for (j = 0; j < 2; j++) {
+***************
+*** 1410,1417 ****
+  	    prod = a * b;
+  	    temp += prod;
+  	  }
+! 	  (*vS).w[i] = temp;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK | VC_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.VC,26.41:VAX:av:vmsumshs %VD, %VA, %VB, %VC:Vector Multiply Sum Signed Half Word Saturate
+--- 1425,1433 ----
+  	    prod = a * b;
+  	    temp += prod;
+  	  }
+! 	  vStmp.w[i] = temp;
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK | VC_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.VC,26.41:VAX:av:vmsumshs %VD, %VA, %VB, %VC:Vector Multiply Sum Signed Half Word Saturate
+***************
+*** 1419,1424 ****
+--- 1435,1441 ----
+  	signed64 temp;
+  	signed32 prod, a, b;
+  	sat = 0;
++ 	vreg vStmp;
+  	for (i = 0; i < 4; i++) {
+  	  temp = (signed64)(signed32)(*vC).w[i];
+  	  for (j = 0; j < 2; j++) {
+***************
+*** 1427,1435 ****
+  	    prod = a * b;
+  	    temp += (signed64)prod;
+  	  }
+! 	  (*vS).w[i] = altivec_signed_saturate_32(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK | VC_BITMASK);
+  
+--- 1444,1453 ----
+  	    prod = a * b;
+  	    temp += (signed64)prod;
+  	  }
+! 	  vStmp.w[i] = altivec_signed_saturate_32(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
++ 	(*vS) = vStmp;
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK | VC_BITMASK);
+  
+***************
+*** 1437,1442 ****
+--- 1455,1461 ----
+  	int i, j;
+  	unsigned32 temp;
+  	unsigned16 prod, a, b;
++ 	vreg vStmp;
+  	for (i = 0; i < 4; i++) {
+  	  temp = (*vC).w[i];
+  	  for (j = 0; j < 4; j++) {
+***************
+*** 1445,1457 ****
+  	    prod = a * b;
+  	    temp += prod;
+  	  }
+! 	  (*vS).w[i] = temp;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK | VC_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.VC,26.38:VAX:av:vmsumuhm %VD, %VA, %VB, %VC:Vector Multiply Sum Unsigned Half Word Modulo
+  	int i, j;
+  	unsigned32 temp, prod, a, b;
+  	for (i = 0; i < 4; i++) {
+  	  temp = (*vC).w[i];
+  	  for (j = 0; j < 2; j++) {
+--- 1464,1478 ----
+  	    prod = a * b;
+  	    temp += prod;
+  	  }
+! 	  vStmp.w[i] = temp;
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK | VC_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.VC,26.38:VAX:av:vmsumuhm %VD, %VA, %VB, %VC:Vector Multiply Sum Unsigned Half Word Modulo
+  	int i, j;
+  	unsigned32 temp, prod, a, b;
++ 	vreg vStmp;
+  	for (i = 0; i < 4; i++) {
+  	  temp = (*vC).w[i];
+  	  for (j = 0; j < 2; j++) {
+***************
+*** 1460,1473 ****
+  	    prod = a * b;
+  	    temp += prod;
+  	  }
+! 	  (*vS).w[i] = temp;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK | VC_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.VC,26.39:VAX:av:vmsumuhs %VD, %VA, %VB, %VC:Vector Multiply Sum Unsigned Half Word Saturate
+  	int i, j, sat, tempsat;
+  	unsigned32 temp, prod, a, b;
+  	sat = 0;
+  	for (i = 0; i < 4; i++) {
+  	  temp = (*vC).w[i];
+  	  for (j = 0; j < 2; j++) {
+--- 1481,1496 ----
+  	    prod = a * b;
+  	    temp += prod;
+  	  }
+! 	  vStmp.w[i] = temp;
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK | VC_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.VC,26.39:VAX:av:vmsumuhs %VD, %VA, %VB, %VC:Vector Multiply Sum Unsigned Half Word Saturate
+  	int i, j, sat, tempsat;
+  	unsigned32 temp, prod, a, b;
+  	sat = 0;
++ 	vreg vStmp;
+  	for (i = 0; i < 4; i++) {
+  	  temp = (*vC).w[i];
+  	  for (j = 0; j < 2; j++) {
+***************
+*** 1476,1484 ****
+  	    prod = a * b;
+  	    temp += prod;
+  	  }
+! 	  (*vS).w[i] = altivec_unsigned_saturate_32(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK | VC_BITMASK);
+  
+--- 1499,1508 ----
+  	    prod = a * b;
+  	    temp += prod;
+  	  }
+! 	  vStmp.w[i] = altivec_unsigned_saturate_32(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
++ 	(*vS) = vStmp;
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK | VC_BITMASK);
+  
+***************
+*** 1491,1586 ****
+  	int i;
+  	signed8 a, b;
+  	signed16 prod;
+  	for (i = 0; i < 8; i++) {
+  	  a = (*vA).b[AV_BINDEX(i*2)]; 
+  	  b = (*vB).b[AV_BINDEX(i*2)];
+  	  prod = a * b;
+! 	  (*vS).h[AV_HINDEX(i)] = prod;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.840:VX:av:vmulesh %VD, %VA, %VB:Vector Multiply Even Signed Half Word
+  	int i;
+  	signed16 a, b;
+  	signed32 prod;
+  	for (i = 0; i < 4; i++) {
+  	  a = (*vA).h[AV_HINDEX(i*2)]; 
+  	  b = (*vB).h[AV_HINDEX(i*2)];
+  	  prod = a * b;
+! 	  (*vS).w[i] = prod;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.520:VX:av:vmuleub %VD, %VA, %VB:Vector Multiply Even Unsigned Byte
+  	int i;
+  	unsigned8 a, b;
+  	unsigned16 prod;
+  	for (i = 0; i < 8; i++) {
+  	  a = (*vA).b[AV_BINDEX(i*2)]; 
+  	  b = (*vB).b[AV_BINDEX(i*2)];
+  	  prod = a * b;
+! 	  (*vS).h[AV_HINDEX(i)] = prod;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.584:VX:av:vmuleuh %VD, %VA, %VB:Vector Multiply Even Unsigned Half Word
+  	int i;
+  	unsigned16 a, b;
+  	unsigned32 prod;
+  	for (i = 0; i < 4; i++) {
+  	  a = (*vA).h[AV_HINDEX(i*2)]; 
+  	  b = (*vB).h[AV_HINDEX(i*2)];
+  	  prod = a * b;
+! 	  (*vS).w[i] = prod;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.264:VX:av:vmulosb %VD, %VA, %VB:Vector Multiply Odd Signed Byte
+  	int i;
+  	signed8 a, b;
+  	signed16 prod;
+  	for (i = 0; i < 8; i++) {
+  	  a = (*vA).b[AV_BINDEX((i*2)+1)]; 
+  	  b = (*vB).b[AV_BINDEX((i*2)+1)];
+  	  prod = a * b;
+! 	  (*vS).h[AV_HINDEX(i)] = prod;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.328:VX:av:vmulosh %VD, %VA, %VB:Vector Multiply Odd Signed Half Word
+  	int i;
+  	signed16 a, b;
+  	signed32 prod;
+  	for (i = 0; i < 4; i++) {
+  	  a = (*vA).h[AV_HINDEX((i*2)+1)]; 
+  	  b = (*vB).h[AV_HINDEX((i*2)+1)];
+  	  prod = a * b;
+! 	  (*vS).w[i] = prod;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.8:VX:av:vmuloub %VD, %VA, %VB:Vector Multiply Odd Unsigned Byte
+  	int i;
+  	unsigned8 a, b;
+  	unsigned16 prod;
+  	for (i = 0; i < 8; i++) {
+  	  a = (*vA).b[AV_BINDEX((i*2)+1)]; 
+  	  b = (*vB).b[AV_BINDEX((i*2)+1)];
+  	  prod = a * b;
+! 	  (*vS).h[AV_HINDEX(i)] = prod;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.72:VX:av:vmulouh %VD, %VA, %VB:Vector Multiply Odd Unsigned Half Word
+  	int i;
+  	unsigned16 a, b;
+  	unsigned32 prod;
+  	for (i = 0; i < 4; i++) {
+  	  a = (*vA).h[AV_HINDEX((i*2)+1)]; 
+  	  b = (*vB).h[AV_HINDEX((i*2)+1)];
+  	  prod = a * b;
+! 	  (*vS).w[i] = prod;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  
+--- 1515,1626 ----
+  	int i;
+  	signed8 a, b;
+  	signed16 prod;
++ 	vreg vStmp;
+  	for (i = 0; i < 8; i++) {
+  	  a = (*vA).b[AV_BINDEX(i*2)]; 
+  	  b = (*vB).b[AV_BINDEX(i*2)];
+  	  prod = a * b;
+! 	  vStmp.h[AV_HINDEX(i)] = prod;
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.840:VX:av:vmulesh %VD, %VA, %VB:Vector Multiply Even Signed Half Word
+  	int i;
+  	signed16 a, b;
+  	signed32 prod;
++ 	vreg vStmp;
+  	for (i = 0; i < 4; i++) {
+  	  a = (*vA).h[AV_HINDEX(i*2)]; 
+  	  b = (*vB).h[AV_HINDEX(i*2)];
+  	  prod = a * b;
+! 	  vStmp.w[i] = prod;
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.520:VX:av:vmuleub %VD, %VA, %VB:Vector Multiply Even Unsigned Byte
+  	int i;
+  	unsigned8 a, b;
+  	unsigned16 prod;
++ 	vreg vStmp;
+  	for (i = 0; i < 8; i++) {
+  	  a = (*vA).b[AV_BINDEX(i*2)]; 
+  	  b = (*vB).b[AV_BINDEX(i*2)];
+  	  prod = a * b;
+! 	  vStmp.h[AV_HINDEX(i)] = prod;
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.584:VX:av:vmuleuh %VD, %VA, %VB:Vector Multiply Even Unsigned Half Word
+  	int i;
+  	unsigned16 a, b;
+  	unsigned32 prod;
++ 	vreg vStmp;
+  	for (i = 0; i < 4; i++) {
+  	  a = (*vA).h[AV_HINDEX(i*2)]; 
+  	  b = (*vB).h[AV_HINDEX(i*2)];
+  	  prod = a * b;
+! 	  vStmp.w[i] = prod;
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.264:VX:av:vmulosb %VD, %VA, %VB:Vector Multiply Odd Signed Byte
+  	int i;
+  	signed8 a, b;
+  	signed16 prod;
++ 	vreg vStmp;
+  	for (i = 0; i < 8; i++) {
+  	  a = (*vA).b[AV_BINDEX((i*2)+1)]; 
+  	  b = (*vB).b[AV_BINDEX((i*2)+1)];
+  	  prod = a * b;
+! 	  vStmp.h[AV_HINDEX(i)] = prod;
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.328:VX:av:vmulosh %VD, %VA, %VB:Vector Multiply Odd Signed Half Word
+  	int i;
+  	signed16 a, b;
+  	signed32 prod;
++ 	vreg vStmp;
+  	for (i = 0; i < 4; i++) {
+  	  a = (*vA).h[AV_HINDEX((i*2)+1)]; 
+  	  b = (*vB).h[AV_HINDEX((i*2)+1)];
+  	  prod = a * b;
+! 	  vStmp.w[i] = prod;
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.8:VX:av:vmuloub %VD, %VA, %VB:Vector Multiply Odd Unsigned Byte
+  	int i;
+  	unsigned8 a, b;
+  	unsigned16 prod;
++ 	vreg vStmp;
+  	for (i = 0; i < 8; i++) {
+  	  a = (*vA).b[AV_BINDEX((i*2)+1)]; 
+  	  b = (*vB).b[AV_BINDEX((i*2)+1)];
+  	  prod = a * b;
+! 	  vStmp.h[AV_HINDEX(i)] = prod;
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.72:VX:av:vmulouh %VD, %VA, %VB:Vector Multiply Odd Unsigned Half Word
+  	int i;
+  	unsigned16 a, b;
+  	unsigned32 prod;
++ 	vreg vStmp;
+  	for (i = 0; i < 4; i++) {
+  	  a = (*vA).h[AV_HINDEX((i*2)+1)]; 
+  	  b = (*vB).h[AV_HINDEX((i*2)+1)];
+  	  prod = a * b;
+! 	  vStmp.w[i] = prod;
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  
+***************
+*** 1634,1646 ****
+  
+  0.4,6.VS,11.VA,16.VB,21.VC,26.43:VX:av:vperm %VD, %VA, %VB, %VC:Vector Permute
+  	int i, who;
+  	for (i = 0; i < 16; i++) {
+  	  who = (*vC).b[AV_BINDEX(i)] & 0x1f;
+  	  if (who & 0x10)
+! 	    (*vS).b[AV_BINDEX(i)] = (*vB).b[AV_BINDEX(who & 0xf)];
+  	  else
+! 	    (*vS).b[AV_BINDEX(i)] = (*vA).b[AV_BINDEX(who & 0xf)];
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK | VC_BITMASK);
+  
+  
+--- 1674,1688 ----
+  
+  0.4,6.VS,11.VA,16.VB,21.VC,26.43:VX:av:vperm %VD, %VA, %VB, %VC:Vector Permute
+  	int i, who;
++ 	vreg vStmp;
+  	for (i = 0; i < 16; i++) {
+  	  who = (*vC).b[AV_BINDEX(i)] & 0x1f;
+  	  if (who & 0x10)
+! 	    vStmp.b[AV_BINDEX(i)] = (*vB).b[AV_BINDEX(who & 0xf)];
+  	  else
+! 	    vStmp.b[AV_BINDEX(i)] = (*vA).b[AV_BINDEX(who & 0xf)];
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK | VC_BITMASK);
+  
+  
+***************
+*** 1650,1677 ****
+  
+  0.4,6.VS,11.VA,16.VB,21.782:VX:av:vpkpx %VD, %VA, %VB:Vector Pack Pixel32
+  	int i;
+  	for (i = 0; i < 4; i++) {
+! 	  (*vS).h[AV_HINDEX(i+4)] = ((((*vB).w[i]) >> 9) & 0xfc00)
+  	               | ((((*vB).w[i]) >> 6) & 0x03e0)
+  	               | ((((*vB).w[i]) >> 3) & 0x001f);
+! 	  (*vS).h[AV_HINDEX(i)] = ((((*vA).w[i]) >> 9) & 0xfc00)
+  	             | ((((*vA).w[i]) >> 6) & 0x03e0)
+  	             | ((((*vA).w[i]) >> 3) & 0x001f);
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.398:VX:av:vpkshss %VD, %VA, %VB:Vector Pack Signed Half Word Signed Saturate
+  	int i, sat, tempsat;
+  	signed16 temp;
+  	sat = 0;
+  	for (i = 0; i < 16; i++) {
+  	  if (i < 8)
+  	    temp = (*vA).h[AV_HINDEX(i)];
+  	  else
+  	    temp = (*vB).h[AV_HINDEX(i-8)];
+! 	  (*vS).b[AV_BINDEX(i)] = altivec_signed_saturate_8(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+--- 1692,1723 ----
+  
+  0.4,6.VS,11.VA,16.VB,21.782:VX:av:vpkpx %VD, %VA, %VB:Vector Pack Pixel32
+  	int i;
++ 	vreg vStmp;
+  	for (i = 0; i < 4; i++) {
+! 	  vStmp.h[AV_HINDEX(i+4)] = ((((*vB).w[i]) >> 9) & 0xfc00)
+  	               | ((((*vB).w[i]) >> 6) & 0x03e0)
+  	               | ((((*vB).w[i]) >> 3) & 0x001f);
+! 	  vStmp.h[AV_HINDEX(i)] = ((((*vA).w[i]) >> 9) & 0xfc00)
+  	             | ((((*vA).w[i]) >> 6) & 0x03e0)
+  	             | ((((*vA).w[i]) >> 3) & 0x001f);
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.398:VX:av:vpkshss %VD, %VA, %VB:Vector Pack Signed Half Word Signed Saturate
+  	int i, sat, tempsat;
+  	signed16 temp;
+  	sat = 0;
++ 	vreg vStmp;
+  	for (i = 0; i < 16; i++) {
+  	  if (i < 8)
+  	    temp = (*vA).h[AV_HINDEX(i)];
+  	  else
+  	    temp = (*vB).h[AV_HINDEX(i-8)];
+! 	  vStmp.b[AV_BINDEX(i)] = altivec_signed_saturate_8(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
++ 	(*vS) = vStmp;
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+***************
+*** 1679,1692 ****
+  	int i, sat, tempsat;
+  	signed16 temp;
+  	sat = 0;
+  	for (i = 0; i < 16; i++) {
+  	  if (i < 8)
+  	    temp = (*vA).h[AV_HINDEX(i)];
+  	  else
+  	    temp = (*vB).h[AV_HINDEX(i-8)];
+! 	  (*vS).b[AV_BINDEX(i)] = altivec_unsigned_saturate_8(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+--- 1725,1740 ----
+  	int i, sat, tempsat;
+  	signed16 temp;
+  	sat = 0;
++ 	vreg vStmp;
+  	for (i = 0; i < 16; i++) {
+  	  if (i < 8)
+  	    temp = (*vA).h[AV_HINDEX(i)];
+  	  else
+  	    temp = (*vB).h[AV_HINDEX(i-8)];
+! 	  vStmp.b[AV_BINDEX(i)] = altivec_unsigned_saturate_8(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
++ 	(*vS) = vStmp;
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+***************
+*** 1694,1707 ****
+  	int i, sat, tempsat;
+  	signed32 temp;
+  	sat = 0;
+  	for (i = 0; i < 8; i++) {
+  	  if (i < 4)
+  	    temp = (*vA).w[i];
+  	  else
+  	    temp = (*vB).w[i-4];
+! 	  (*vS).h[AV_HINDEX(i)] = altivec_signed_saturate_16(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+--- 1742,1757 ----
+  	int i, sat, tempsat;
+  	signed32 temp;
+  	sat = 0;
++ 	vreg vStmp;
+  	for (i = 0; i < 8; i++) {
+  	  if (i < 4)
+  	    temp = (*vA).w[i];
+  	  else
+  	    temp = (*vB).w[i-4];
+! 	  vStmp.h[AV_HINDEX(i)] = altivec_signed_saturate_16(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
++ 	(*vS) = vStmp;
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+***************
+*** 1709,1738 ****
+  	int i, sat, tempsat;
+  	signed32 temp;
+  	sat = 0;
+  	for (i = 0; i < 8; i++) {
+  	  if (i < 4)
+  	    temp = (*vA).w[i];
+  	  else
+  	    temp = (*vB).w[i-4];
+! 	  (*vS).h[AV_HINDEX(i)] = altivec_unsigned_saturate_16(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.14:VX:av:vpkuhum %VD, %VA, %VB:Vector Pack Unsigned Half Word Unsigned Modulo
+  	int i;
+  	for (i = 0; i < 16; i++)
+  	  if (i < 8)
+! 	    (*vS).b[AV_BINDEX(i)] = (*vA).h[AV_HINDEX(i)];
+  	  else
+! 	    (*vS).b[AV_BINDEX(i)] = (*vB).h[AV_HINDEX(i-8)];
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.142:VX:av:vpkuhus %VD, %VA, %VB:Vector Pack Unsigned Half Word Unsigned Saturate
+  	int i, sat, tempsat;
+  	signed16 temp;
+  	sat = 0;
+  	for (i = 0; i < 16; i++) {
+  	  if (i < 8)
+  	    temp = (*vA).h[AV_HINDEX(i)];
+--- 1759,1793 ----
+  	int i, sat, tempsat;
+  	signed32 temp;
+  	sat = 0;
++ 	vreg vStmp;
+  	for (i = 0; i < 8; i++) {
+  	  if (i < 4)
+  	    temp = (*vA).w[i];
+  	  else
+  	    temp = (*vB).w[i-4];
+! 	  vStmp.h[AV_HINDEX(i)] = altivec_unsigned_saturate_16(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
++ 	(*vS) = vStmp;
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.14:VX:av:vpkuhum %VD, %VA, %VB:Vector Pack Unsigned Half Word Unsigned Modulo
+  	int i;
++ 	vreg vStmp;
+  	for (i = 0; i < 16; i++)
+  	  if (i < 8)
+! 	    vStmp.b[AV_BINDEX(i)] = (*vA).h[AV_HINDEX(i)];
+  	  else
+! 	    vStmp.b[AV_BINDEX(i)] = (*vB).h[AV_HINDEX(i-8)];
+! 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.142:VX:av:vpkuhus %VD, %VA, %VB:Vector Pack Unsigned Half Word Unsigned Saturate
+  	int i, sat, tempsat;
+  	signed16 temp;
+  	sat = 0;
++ 	vreg vStmp;
+  	for (i = 0; i < 16; i++) {
+  	  if (i < 8)
+  	    temp = (*vA).h[AV_HINDEX(i)];
+***************
+*** 1740,1764 ****
+  	    temp = (*vB).h[AV_HINDEX(i-8)];
+  	  /* force positive in signed16, ok as we'll toss the bit away anyway */
+  	  temp &= ~0x8000;
+! 	  (*vS).b[AV_BINDEX(i)] = altivec_unsigned_saturate_8(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.78:VX:av:vpkuwum %VD, %VA, %VB:Vector Pack Unsigned Word Unsigned Modulo
+  	int i;
+  	for (i = 0; i < 8; i++)
+! 	  if (i < 8)
+! 	    (*vS).h[AV_HINDEX(i)] = (*vA).w[i];
+  	  else
+! 	    (*vS).h[AV_HINDEX(i)] = (*vB).w[i-8];
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.206:VX:av:vpkuwus %VD, %VA, %VB:Vector Pack Unsigned Word Unsigned Saturate
+  	int i, sat, tempsat;
+  	signed32 temp;
+  	sat = 0;
+  	for (i = 0; i < 8; i++) {
+  	  if (i < 4)
+  	    temp = (*vA).w[i];
+--- 1795,1823 ----
+  	    temp = (*vB).h[AV_HINDEX(i-8)];
+  	  /* force positive in signed16, ok as we'll toss the bit away anyway */
+  	  temp &= ~0x8000;
+! 	  vStmp.b[AV_BINDEX(i)] = altivec_unsigned_saturate_8(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
++ 	(*vS) = vStmp;
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.78:VX:av:vpkuwum %VD, %VA, %VB:Vector Pack Unsigned Word Unsigned Modulo
+  	int i;
++ 	vreg vStmp;
+  	for (i = 0; i < 8; i++)
+! 	  if (i < 4)
+! 	    vStmp.h[AV_HINDEX(i)] = (*vA).w[i];
+  	  else
+! 	    vStmp.h[AV_HINDEX(i)] = (*vB).w[i-4];
+! 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.206:VX:av:vpkuwus %VD, %VA, %VB:Vector Pack Unsigned Word Unsigned Saturate
+  	int i, sat, tempsat;
+  	signed32 temp;
+  	sat = 0;
++ 	vreg vStmp;
+  	for (i = 0; i < 8; i++) {
+  	  if (i < 4)
+  	    temp = (*vA).w[i];
+***************
+*** 1766,1774 ****
+  	    temp = (*vB).w[i-4];
+  	  /* force positive in signed32, ok as we'll toss the bit away anyway */
+  	  temp &= ~0x80000000;
+! 	  (*vS).h[AV_HINDEX(i)] = altivec_unsigned_saturate_16(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+--- 1825,1834 ----
+  	    temp = (*vB).w[i-4];
+  	  /* force positive in signed32, ok as we'll toss the bit away anyway */
+  	  temp &= ~0x80000000;
+! 	  vStmp.h[AV_HINDEX(i)] = altivec_unsigned_saturate_16(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
++ 	(*vS) = vStmp;
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+***************
+*** 1909,1923 ****
+  	int sh, i, j, carry, new_carry;
+  	sh = (*vB).b[0] & 7;	/* don't bother checking everything */
+  	carry = 0;
+  	for (j = 3; j >= 0; j--) {
+  	  if (CURRENT_TARGET_BYTE_ORDER == BIG_ENDIAN)
+  	    i = j;
+  	  else
+  	    i = (j + 2) % 4;
+  	  new_carry = (*vA).w[i] >> (32 - sh);
+! 	  (*vS).w[i] = ((*vA).w[i] << sh) | carry;
+  	  carry = new_carry;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.260:VX:av:vslb %VD, %VA, %VB:Vector Shift Left Integer Byte
+--- 1969,1985 ----
+  	int sh, i, j, carry, new_carry;
+  	sh = (*vB).b[0] & 7;	/* don't bother checking everything */
+  	carry = 0;
++ 	vreg vStmp;
+  	for (j = 3; j >= 0; j--) {
+  	  if (CURRENT_TARGET_BYTE_ORDER == BIG_ENDIAN)
+  	    i = j;
+  	  else
+  	    i = (j + 2) % 4;
+  	  new_carry = (*vA).w[i] >> (32 - sh);
+! 	  vStmp.w[i] = ((*vA).w[i] << sh) | carry;
+  	  carry = new_carry;
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.260:VX:av:vslb %VD, %VA, %VB:Vector Shift Left Integer Byte
+***************
+*** 1928,1939 ****
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+! 0.4,6.VS,11.VA,16.VB,21.0,22.SH,26.44:VX:av:vsldol %VD, %VA, %VB:Vector Shift Left Double by Octet Immediate
+  	int i, j;
+  	for (j = 0, i = SH; i < 16; i++)
+! 	  (*vS).b[j++] = (*vA).b[i];
+  	for (i = 0; i < SH; i++)
+! 	  (*vS).b[j++] = (*vB).b[i];
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.324:VX:av:vslh %VD, %VA, %VB:Vector Shift Left Half Word
+--- 1990,2003 ----
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+! 0.4,6.VS,11.VA,16.VB,21.0,22.SH,26.44:VX:av:vsldoi %VD, %VA, %VB:Vector Shift Left Double by Octet Immediate
+  	int i, j;
++ 	vreg vStmp;
+  	for (j = 0, i = SH; i < 16; i++)
+! 	  vStmp.b[j++] = (*vA).b[i];
+  	for (i = 0; i < SH; i++)
+! 	  vStmp.b[j++] = (*vB).b[i];
+! 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.324:VX:av:vslh %VD, %VA, %VB:Vector Shift Left Half Word
+***************
+*** 1946,1961 ****
+  
+  0.4,6.VS,11.VA,16.VB,21.1036:VX:av:vslo %VD, %VA, %VB:Vector Shift Left by Octet
+  	int i, sh;
+  	if (CURRENT_TARGET_BYTE_ORDER == BIG_ENDIAN)
+  	  sh = ((*vB).b[AV_BINDEX(15)] >> 3) & 0xf;
+  	else
+  	  sh = ((*vB).b[AV_BINDEX(0)] >> 3) & 0xf;
+  	for (i = 0; i < 16; i++) {
+  	  if (15 - i > sh)
+! 	    (*vS).b[AV_BINDEX(i)] = (*vA).b[AV_BINDEX(i + sh)];
+  	  else
+! 	    (*vS).b[AV_BINDEX(i)] = 0;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.388:VX:av:vslw %VD, %VA, %VB:Vector Shift Left Integer Word
+--- 2010,2027 ----
+  
+  0.4,6.VS,11.VA,16.VB,21.1036:VX:av:vslo %VD, %VA, %VB:Vector Shift Left by Octet
+  	int i, sh;
++ 	vreg vStmp;
+  	if (CURRENT_TARGET_BYTE_ORDER == BIG_ENDIAN)
+  	  sh = ((*vB).b[AV_BINDEX(15)] >> 3) & 0xf;
+  	else
+  	  sh = ((*vB).b[AV_BINDEX(0)] >> 3) & 0xf;
+  	for (i = 0; i < 16; i++) {
+  	  if (15 - i > sh)
+! 	    vStmp.b[AV_BINDEX(i)] = (*vA).b[AV_BINDEX(i + sh)];
+  	  else
+! 	    vStmp.b[AV_BINDEX(i)] = 0;
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.388:VX:av:vslw %VD, %VA, %VB:Vector Shift Left Integer Word
+***************
+*** 2034,2048 ****
+  	int sh, i, j, carry, new_carry;
+  	sh = (*vB).b[0] & 7;	/* don't bother checking everything */
+  	carry = 0;
+  	for (j = 0; j < 4; j++) {
+  	  if (CURRENT_TARGET_BYTE_ORDER == BIG_ENDIAN)
+  	    i = j;
+  	  else
+  	    i = (j + 2) % 4;
+  	  new_carry = (*vA).w[i] << (32 - sh);
+! 	  (*vS).w[i] = ((*vA).w[i] >> sh) | carry;
+  	  carry = new_carry;
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.772:VX:av:vsrab %VD, %VA, %VB:Vector Shift Right Algebraic Byte
+--- 2100,2116 ----
+  	int sh, i, j, carry, new_carry;
+  	sh = (*vB).b[0] & 7;	/* don't bother checking everything */
+  	carry = 0;
++ 	vreg vStmp;
+  	for (j = 0; j < 4; j++) {
+  	  if (CURRENT_TARGET_BYTE_ORDER == BIG_ENDIAN)
+  	    i = j;
+  	  else
+  	    i = (j + 2) % 4;
+  	  new_carry = (*vA).w[i] << (32 - sh);
+! 	  vStmp.w[i] = ((*vA).w[i] >> sh) | carry;
+  	  carry = new_carry;
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.772:VX:av:vsrab %VD, %VA, %VB:Vector Shift Right Algebraic Byte
+***************
+*** 2093,2108 ****
+  
+  0.4,6.VS,11.VA,16.VB,21.1100:VX:av:vsro %VD, %VA, %VB:Vector Shift Right Octet
+  	int i, sh;
+  	if (CURRENT_TARGET_BYTE_ORDER == BIG_ENDIAN)
+  	  sh = ((*vB).b[AV_BINDEX(15)] >> 3) & 0xf;
+  	else
+  	  sh = ((*vB).b[AV_BINDEX(0)] >> 3) & 0xf;
+  	for (i = 0; i < 16; i++) {
+  	  if (i < sh)
+! 	    (*vS).b[AV_BINDEX(i)] = 0;
+  	  else
+! 	    (*vS).b[AV_BINDEX(i)] = (*vA).b[AV_BINDEX(i - sh)];
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.644:VX:av:vsrw %VD, %VA, %VB:Vector Shift Right Word
+--- 2161,2178 ----
+  
+  0.4,6.VS,11.VA,16.VB,21.1100:VX:av:vsro %VD, %VA, %VB:Vector Shift Right Octet
+  	int i, sh;
++ 	vreg vStmp;
+  	if (CURRENT_TARGET_BYTE_ORDER == BIG_ENDIAN)
+  	  sh = ((*vB).b[AV_BINDEX(15)] >> 3) & 0xf;
+  	else
+  	  sh = ((*vB).b[AV_BINDEX(0)] >> 3) & 0xf;
+  	for (i = 0; i < 16; i++) {
+  	  if (i < sh)
+! 	    vStmp.b[AV_BINDEX(i)] = 0;
+  	  else
+! 	    vStmp.b[AV_BINDEX(i)] = (*vA).b[AV_BINDEX(i - sh)];
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.644:VX:av:vsrw %VD, %VA, %VB:Vector Shift Right Word
+***************
+*** 2238,2287 ****
+  0.4,6.VS,11.VA,16.VB,21.1928:VX:av:vsumsws %VD, %VA, %VB:Vector Sum Across Signed Word Saturate
+  	int i, sat;
+  	signed64 temp;
+  	temp = (signed64)(signed32)(*vB).w[3];
+  	for (i = 0; i < 4; i++)
+  	  temp += (signed64)(signed32)(*vA).w[i];
+! 	(*vS).w[3] = altivec_signed_saturate_32(temp, &sat);
+! 	(*vS).w[0] = (*vS).w[1] = (*vS).w[2] = 0;
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.1672:VX:av:vsum2sws %VD, %VA, %VB:Vector Sum Across Partial (1/2) Signed Word Saturate
+  	int i, j, sat, tempsat;
+  	signed64 temp;
+  	for (j = 0; j < 4; j += 2) {
+  	  temp = (signed64)(signed32)(*vB).w[j+1];
+  	  temp += (signed64)(signed32)(*vA).w[j] + (signed64)(signed32)(*vA).w[j+1];
+! 	  (*vS).w[j+1] = altivec_signed_saturate_32(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
+! 	(*vS).w[0] = (*vS).w[2] = 0;
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.1800:VX:av:vsum4sbs %VD, %VA, %VB:Vector Sum Across Partial (1/4) Signed Byte Saturate
+  	int i, j, sat, tempsat;
+  	signed64 temp;
+  	for (j = 0; j < 4; j++) {
+  	  temp = (signed64)(signed32)(*vB).w[j];
+  	  for (i = 0; i < 4; i++)
+  	    temp += (signed64)(signed8)(*vA).b[i+(j*4)];
+! 	  (*vS).w[j] = altivec_signed_saturate_32(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.1608:VX:av:vsum4shs %VD, %VA, %VB:Vector Sum Across Partial (1/4) Signed Half Word Saturate
+  	int i, j, sat, tempsat;
+  	signed64 temp;
+  	for (j = 0; j < 4; j++) {
+  	  temp = (signed64)(signed32)(*vB).w[j];
+  	  for (i = 0; i < 2; i++)
+  	    temp += (signed64)(signed16)(*vA).h[i+(j*2)];
+! 	  (*vS).w[j] = altivec_signed_saturate_32(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+--- 2308,2365 ----
+  0.4,6.VS,11.VA,16.VB,21.1928:VX:av:vsumsws %VD, %VA, %VB:Vector Sum Across Signed Word Saturate
+  	int i, sat;
+  	signed64 temp;
++ 	vreg vStmp;
+  	temp = (signed64)(signed32)(*vB).w[3];
+  	for (i = 0; i < 4; i++)
+  	  temp += (signed64)(signed32)(*vA).w[i];
+! 	vStmp.w[3] = altivec_signed_saturate_32(temp, &sat);
+! 	vStmp.w[0] = vStmp.w[1] = vStmp.w[2] = 0;
+! 	(*vS) = vStmp;
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.1672:VX:av:vsum2sws %VD, %VA, %VB:Vector Sum Across Partial (1/2) Signed Word Saturate
+  	int i, j, sat, tempsat;
+  	signed64 temp;
++ 	vreg vStmp;
+  	for (j = 0; j < 4; j += 2) {
+  	  temp = (signed64)(signed32)(*vB).w[j+1];
+  	  temp += (signed64)(signed32)(*vA).w[j] + (signed64)(signed32)(*vA).w[j+1];
+! 	  vStmp.w[j+1] = altivec_signed_saturate_32(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
+! 	vStmp.w[0] = vStmp.w[2] = 0;
+! 	(*vS) = vStmp;
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.1800:VX:av:vsum4sbs %VD, %VA, %VB:Vector Sum Across Partial (1/4) Signed Byte Saturate
+  	int i, j, sat, tempsat;
+  	signed64 temp;
++ 	vreg vStmp;
+  	for (j = 0; j < 4; j++) {
+  	  temp = (signed64)(signed32)(*vB).w[j];
+  	  for (i = 0; i < 4; i++)
+  	    temp += (signed64)(signed8)(*vA).b[i+(j*4)];
+! 	  vStmp.w[j] = altivec_signed_saturate_32(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
++ 	(*vS) = vStmp;
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+  0.4,6.VS,11.VA,16.VB,21.1608:VX:av:vsum4shs %VD, %VA, %VB:Vector Sum Across Partial (1/4) Signed Half Word Saturate
+  	int i, j, sat, tempsat;
+  	signed64 temp;
++ 	vreg vStmp;
+  	for (j = 0; j < 4; j++) {
+  	  temp = (signed64)(signed32)(*vB).w[j];
+  	  for (i = 0; i < 2; i++)
+  	    temp += (signed64)(signed16)(*vA).h[i+(j*2)];
+! 	  vStmp.w[j] = altivec_signed_saturate_32(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
++ 	(*vS) = vStmp;
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+***************
+*** 2289,2302 ****
+  	int i, j, sat, tempsat;
+  	signed64 utemp;
+  	signed64 temp;
+  	for (j = 0; j < 4; j++) {
+  	  utemp = (signed64)(unsigned32)(*vB).w[j];
+  	  for (i = 0; i < 4; i++)
+  	    utemp += (signed64)(unsigned16)(*vA).b[i+(j*4)];
+  	  temp = utemp;
+! 	  (*vS).w[j] = altivec_unsigned_saturate_32(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+--- 2367,2382 ----
+  	int i, j, sat, tempsat;
+  	signed64 utemp;
+  	signed64 temp;
++ 	vreg vStmp;
+  	for (j = 0; j < 4; j++) {
+  	  utemp = (signed64)(unsigned32)(*vB).w[j];
+  	  for (i = 0; i < 4; i++)
+  	    utemp += (signed64)(unsigned16)(*vA).b[i+(j*4)];
+  	  temp = utemp;
+! 	  vStmp.w[j] = altivec_unsigned_saturate_32(temp, &tempsat);
+  	  sat |= tempsat;
+  	}
++ 	(*vS) = vStmp;
+  	ALTIVEC_SET_SAT(sat);
+  	PPC_INSN_VR_VSCR(VS_BITMASK, VA_BITMASK | VB_BITMASK);
+  
+***************
+*** 2308,2354 ****
+  0.4,6.VS,11.0,16.VB,21.846:VX:av:vupkhpx %VD, %VB:Vector Unpack High Pixel16
+  	int i;
+  	unsigned16 h;
+  	for (i = 0; i < 4; i++) {
+  	  h = (*vB).h[AV_HINDEX(i)];
+! 	  (*vS).w[i] = ((h & 0x8000) ? 0xff000000 : 0)
+  		     | ((h & 0x7c00) << 6)
+  		     | ((h & 0x03e0) << 3)
+  		     | ((h & 0x001f));
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VB_BITMASK);
+  
+  0.4,6.VS,11.0,16.VB,21.526:VX:av:vupkhsb %VD, %VB:Vector Unpack High Signed Byte
+  	int i;
+  	for (i = 0; i < 8; i++)
+! 	  (*vS).h[AV_HINDEX(i)] = (signed16)(signed8)(*vB).b[AV_BINDEX(i)];
+  	PPC_INSN_VR(VS_BITMASK, VB_BITMASK);
+  
+  0.4,6.VS,11.0,16.VB,21.590:VX:av:vupkhsh %VD, %VB:Vector Unpack High Signed Half Word
+  	int i;
+  	for (i = 0; i < 4; i++)
+! 	  (*vS).w[i] = (signed32)(signed16)(*vB).h[AV_HINDEX(i)];
+  	PPC_INSN_VR(VS_BITMASK, VB_BITMASK);
+  
+  0.4,6.VS,11.0,16.VB,21.974:VX:av:vupklpx %VD, %VB:Vector Unpack Low Pixel16
+  	int i;
+  	unsigned16 h;
+  	for (i = 0; i < 4; i++) {
+  	  h = (*vB).h[AV_HINDEX(i + 4)];
+! 	  (*vS).w[i] = ((h & 0x8000) ? 0xff000000 : 0)
+  		     | ((h & 0x7c00) << 6)
+  		     | ((h & 0x03e0) << 3)
+  		     | ((h & 0x001f));
+  	}
+  	PPC_INSN_VR(VS_BITMASK, VB_BITMASK);
+  
+  0.4,6.VS,11.0,16.VB,21.654:VX:av:vupklsb %VD, %VB:Vector Unpack Low Signed Byte
+  	int i;
+  	for (i = 0; i < 8; i++)
+! 	  (*vS).h[AV_HINDEX(i)] = (signed16)(signed8)(*vB).b[AV_BINDEX(i + 8)];
+  	PPC_INSN_VR(VS_BITMASK, VB_BITMASK);
+  
+  0.4,6.VS,11.0,16.VB,21.718:VX:av:vupklsh %VD, %VB:Vector Unpack Low Signed Half Word
+  	int i;
+  	for (i = 0; i < 4; i++)
+! 	  (*vS).w[i] = (signed32)(signed16)(*vB).h[AV_HINDEX(i + 4)];
+  	PPC_INSN_VR(VS_BITMASK, VB_BITMASK);
+--- 2388,2446 ----
+  0.4,6.VS,11.0,16.VB,21.846:VX:av:vupkhpx %VD, %VB:Vector Unpack High Pixel16
+  	int i;
+  	unsigned16 h;
++ 	vreg vStmp;
+  	for (i = 0; i < 4; i++) {
+  	  h = (*vB).h[AV_HINDEX(i)];
+! 	  vStmp.w[i] = ((h & 0x8000) ? 0xff000000 : 0)
+  		     | ((h & 0x7c00) << 6)
+  		     | ((h & 0x03e0) << 3)
+  		     | ((h & 0x001f));
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VB_BITMASK);
+  
+  0.4,6.VS,11.0,16.VB,21.526:VX:av:vupkhsb %VD, %VB:Vector Unpack High Signed Byte
+  	int i;
++ 	vreg vStmp;
+  	for (i = 0; i < 8; i++)
+! 	  vStmp.h[AV_HINDEX(i)] = (signed16)(signed8)(*vB).b[AV_BINDEX(i)];
+! 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VB_BITMASK);
+  
+  0.4,6.VS,11.0,16.VB,21.590:VX:av:vupkhsh %VD, %VB:Vector Unpack High Signed Half Word
+  	int i;
++ 	vreg vStmp;
+  	for (i = 0; i < 4; i++)
+! 	  vStmp.w[i] = (signed32)(signed16)(*vB).h[AV_HINDEX(i)];
+! 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VB_BITMASK);
+  
+  0.4,6.VS,11.0,16.VB,21.974:VX:av:vupklpx %VD, %VB:Vector Unpack Low Pixel16
+  	int i;
+  	unsigned16 h;
++ 	vreg vStmp;
+  	for (i = 0; i < 4; i++) {
+  	  h = (*vB).h[AV_HINDEX(i + 4)];
+! 	  vStmp.w[i] = ((h & 0x8000) ? 0xff000000 : 0)
+  		     | ((h & 0x7c00) << 6)
+  		     | ((h & 0x03e0) << 3)
+  		     | ((h & 0x001f));
+  	}
++ 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VB_BITMASK);
+  
+  0.4,6.VS,11.0,16.VB,21.654:VX:av:vupklsb %VD, %VB:Vector Unpack Low Signed Byte
+  	int i;
++ 	vreg vStmp;
+  	for (i = 0; i < 8; i++)
+! 	  vStmp.h[AV_HINDEX(i)] = (signed16)(signed8)(*vB).b[AV_BINDEX(i + 8)];
+! 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VB_BITMASK);
+  
+  0.4,6.VS,11.0,16.VB,21.718:VX:av:vupklsh %VD, %VB:Vector Unpack Low Signed Half Word
+  	int i;
++ 	vreg vStmp;
+  	for (i = 0; i < 4; i++)
+! 	  vStmp.w[i] = (signed32)(signed16)(*vB).h[AV_HINDEX(i + 4)];
+! 	(*vS) = vStmp;
+  	PPC_INSN_VR(VS_BITMASK, VB_BITMASK);
