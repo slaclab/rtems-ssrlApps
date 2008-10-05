@@ -1,0 +1,15 @@
+CLOBBER_ADDITIONS = $(addprefix $(srcdir)/,$(sort $(foreach n,$(LINKS) $(DUMMYHEADERS),$(firstword $(subst /, ,$(n))))))
+
+$(DUMMYHEADERS):
+	@if [ ! -d $(srcdir)/`dirname $@` ] ; then mkdir -p $(srcdir)/`dirname $@`; fi
+	@touch $(srcdir)/$@
+
+$(LINKS:%=$(srcdir)/%):
+	@if [ ! -d $(dir $@) ] ; then mkdir -p $(dir $@); fi
+	@ln -s `echo $(@:$(srcdir)/%=%) | sed -e 's%[^/]\+[/]\+%../%g'` $@
+
+
+BUILT_SOURCES += $(DUMMYHEADERS) $(LINKS)
+
+distclean-local:
+	$(RM) -r $(CLOBBER_ADDITIONS)
