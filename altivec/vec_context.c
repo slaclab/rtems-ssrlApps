@@ -23,7 +23,7 @@
 #endif
 
 #if defined RTEMS_VERSION_LATER_THAN
-#if ! RTEMS_VERSION_LATER_THAN(4,8,99)
+#if ! RTEMS_VERSION_LATER_THAN(4,8,0)
 #define bool boolean
 #endif
 #endif
