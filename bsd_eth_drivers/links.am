@@ -1,12 +1,12 @@
-CLOBBER_ADDITIONS = $(addprefix $(srcdir)/,$(sort $(foreach n,$(LINKS) $(DUMMYHEADERS),$(firstword $(subst /, ,$(n))))))
+CLOBBER_ADDITIONS = $(LINKS) $(DUMMYHEADERS)
 
 $(DUMMYHEADERS):
-	@if [ ! -d $(srcdir)/`dirname $@` ] ; then mkdir -p $(srcdir)/`dirname $@`; fi
-	@touch $(srcdir)/$@
+	@if [ ! -d `dirname $@` ] ; then mkdir -p `dirname $@`; fi
+	@touch $@
 
-$(LINKS:%=$(srcdir)/%):
+$(LINKS):
 	@if [ ! -d $(dir $@) ] ; then mkdir -p $(dir $@); fi
-	@ln -s `echo $(@:$(srcdir)/%=%) | sed -e 's%[^/]\+[/]\+%../%g'` $@
+	@ln -s `echo $(dir $@) | sed -e 's%[^/]\+[/]\+%../%g'`$(srcdir)/$(notdir $@) $@
 
 
 BUILT_SOURCES += $(DUMMYHEADERS) $(LINKS)
