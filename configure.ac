@@ -92,6 +92,9 @@ AC_CHECK_FUNC(pci_find_device)
 # the macro just checks if it can link the symbol
 # which is good enough
 AC_CHECK_FUNCS([BSP_commandline_string])
+AC_CHECK_DECL([BSP_commandline_string],
+	[AC_DEFINE([DECL_BSP_COMMANDLINE_STRING],1,[Whether BSP_commandline_string is declared in <bsp.h>])],
+	,,[INCLUDES=bsp.h])
 
 if test -d $srcdir/telnetd ; then
 	AC_CONFIG_FILES(telnetd/Makefile)
@@ -297,9 +300,16 @@ if test -d $srcdir/netboot ; then
 fi
 
 if test -d $srcdir/system ; then
-	AC_CONFIG_SUBDIRS(system)
-	AC_CONFIG_COMMANDS_POST([if test ! -h system/data ; then ln -s ../data system/data; fi])
-	enable_subdirs="${enable_subdirs} system"
+	case "$enable_rtemsbsp" in
+		rce405)
+		# real application is built somewhere else
+		;;
+		*)
+			AC_CONFIG_SUBDIRS(system)
+			AC_CONFIG_COMMANDS_POST([if test ! -h system/data ; then ln -s ../data system/data; fi])
+			enable_subdirs="${enable_subdirs} system"
+		;;
+	esac
 fi
 
 # an ugly hack so we can give programs that
