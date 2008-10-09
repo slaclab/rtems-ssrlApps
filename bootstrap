@@ -1,5 +1,16 @@
 #!/bin/sh
 
+localhack=
+while getopts "l" theopt ; do
+	case $theopt in
+		l)
+			localhack=yes
+		;;
+		*)
+		;;
+	esac
+done
+
 if test -d cexp ; then
 	(cd cexp; make src)
 fi
@@ -14,16 +25,18 @@ for val in cexp/binutils* binutils* ; do
 	fi
 done
 
+if test "$localhack" = "yes" ; then
 # for some strange reason it is not
 # possible to pass autoreconf an option
 # directing it to serach directories
 # for '.m4' files for aclocal. The '-I/-B'
 # options don't seem to work. We hack
 # around this by setting ACLOCAL
-#if test "${ACLOCAL+set}" = "set" ; then
-#	echo "Warning: ACLOCAL is already set; I add a -I option";
-#else
-#	ACLOCAL=aclocal
-#fi
-#export	ACLOCAL="$ACLOCAL -I `(cd \`dirname $0\`; pwd)`/autognu"
+	if test "${ACLOCAL+set}" = "set" ; then
+		echo "Warning: ACLOCAL is already set; I add a -I option";
+	else
+		ACLOCAL=aclocal
+	fi
+	export	ACLOCAL="$ACLOCAL -I `(cd \`dirname $0\`; pwd)`/autognu"
+fi
 autoreconf -i
