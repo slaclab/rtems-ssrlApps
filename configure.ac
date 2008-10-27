@@ -318,7 +318,9 @@ if test -d $srcdir/system ; then
 		*)
 			enable_subdirs="$enable_subdirs system"
 			AC_CONFIG_SUBDIRS([system])
-			AC_CONFIG_COMMANDS_POST([if test ! -h system/data ; then ln -s ../data system/data; fi])
+			# AC_CONFIG_COMMANDS_POST is executed anyways; we therefore
+			# must test for presence of srcdir/system again.
+			AC_CONFIG_COMMANDS_POST([if test -d $srcdir/system -a ! -h system/data ; then ln -s ../data system/data; fi])
 		;;
 	esac
 fi
