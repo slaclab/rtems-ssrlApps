@@ -28,7 +28,7 @@ done
 if test "$localhack" = "yes" ; then
 # for some strange reason it is not
 # possible to pass autoreconf an option
-# directing it to serach directories
+# directing it to search directories
 # for '.m4' files for aclocal. The '-I/-B'
 # options don't seem to work. We hack
 # around this by setting ACLOCAL
