@@ -189,8 +189,26 @@ AC_DEFUN([TILLAC_RTEMS_CONFIG_BSPS_RECURSIVE],
 		done
 		TILLAC_RTEMS_RESET_MAKEVARS
 		AC_MSG_NOTICE([Creating toplevel makefile:] m4_if($1,,makefile,$1))
-	    AC_SUBST(bsp_subdirs,$enable_rtemsbsp)
-   		m4_syscmd([echo 'AUTOMAKE_OPTIONS=foreign' >] m4_if($1,,makefile,$1).top.am [ ; echo 'SUBDIRS=@bsp_subdirs@' >>] m4_if($1,,makefile,$1).top.am)
+	    AC_SUBST(bsp_subdirs,[$enable_rtemsbsp])
+		AC_SUBST(bsp_distsub,['$(firstword '"$enable_rtemsbsp"')'])
+   		m4_syscmd([cat - >] m4_if($1,,makefile,$1).top.am [<<'EOF_'
+AUTOMAKE_OPTIONS=foreign
+SUBDIRS=@bsp_subdirs@
+## Faschist automake doesn't let us
+##    DIST_SUBDIRS=$(firstword $(SUBDIRS))
+## so we must use a autoconf substitution
+##
+# When making a distribution we only want to 
+# recurse into (any) one single BSP subdir.
+DIST_SUBDIRS=@bsp_distsub@
+
+# The dist-hook then removes this extra
+# directory level again.
+dist-hook:
+	mv -f $(distdir)/$(DIST_SUBDIRS)/* $(distdir)
+	rmdir $(distdir)/$(DIST_SUBDIRS)
+EOF_
+])
 		AC_CONFIG_FILES(m4_if($1,,makefile,$1):m4_if($1,,makefile,$1).top.in)
 		AC_OUTPUT
 		exit 0
@@ -417,7 +435,7 @@ AC_DEFUN([TILLAC_RTEMS_BSP_POSTLINK_CMDS],
 	[AC_ARG_VAR([RTEMS_BSP_POSTLINK_CMDS],[Command sequence to convert ELF file into downloadable executable])
 	AC_MSG_NOTICE([Setting RTEMS_BSP_POSTLINK_CMDS based on RTEMS_BSP_FAMILY])
 	case "$RTEMS_BSP_FAMILY" in
-		svgm|beatnik|mvme5500|mvme3100)
+		svgm|beatnik|mvme5500|mvme3100|uC5282)
 # convert ELF -> pure binary
 			RTEMS_BSP_POSTLINK_CMDS='$(OBJCOPY) -Obinary $(basename $[@])$(APPEXEEXT) $[@]'
 		;;

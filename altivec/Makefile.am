@@ -8,6 +8,8 @@ EXEEXT=$(OBJEXEEXT)
 librtemsAltivec_a_SOURCES = vec_context.c vec_alloc.c
 lib_LIBRARIES             = librtemsAltivec.a
 
+EXTRA_DIST                = ppc_stack_probe.c
+
 # Notes about compiler flags:
 #
 # -mno-altivec

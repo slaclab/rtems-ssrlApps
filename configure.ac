@@ -1,7 +1,7 @@
 AC_PREREQ(2.62)
 m4_define([SSRLAPPS_VERSION],TILLAC_CVSTAG([$Name$]))
 
-AC_INIT(ssrlApps, SSLRAPPS_VERSION, <strauman@slac.stanford.edu>)
+AC_INIT(ssrlApps, TILLAC_CVSTAG([$Name$]), <strauman@slac.stanford.edu>)
 
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
@@ -21,6 +21,7 @@ AM_CONFIG_HEADER(config.h)
 TILLAC_RTEMS_SETUP
 
 AC_SUBST([enable_subdirs])
+AC_SUBST([all_subdirs])
 AC_SUBST([rtems_cpu],[$host_cpu])
 AC_SUBST([rtems_bsp],[$enable_rtemsbsp])
 
@@ -63,32 +64,33 @@ dnl
 dnl my_config_files=Makefile
 dnl
 AC_CONFIG_FILES([Makefile])
-my_config_files=
 enable_subdirs=
+all_subdirs=
 
-case ${host_cpu} in
-	powerpc | i386)
-		if test -d $srcdir/libbspExt; then
-		my_config_files="$my_config_files libbspExt/Makefile"
-		enable_subdirs="${enable_subdirs} libbspExt"
-		AC_DEFINE(HAVE_LIBBSPEXT,1,[Whether we have the libbspExt extension library])
-		have_bspext=yes
-		fi 
-	;;
-	*)
-	;;
-esac
+if test -d $srcdir/libbspExt ; then
+	AC_CONFIG_FILES([libbspExt/Makefile])
+	all_subdirs="$all_subdirs libbspExt"
+	case ${host_cpu} in
+		powerpc | i386)
+			enable_subdirs="${enable_subdirs} libbspExt"
+			AC_DEFINE(HAVE_LIBBSPEXT,1,[Whether we have the libbspExt extension library])
+		;;
+		*)
+		;;
+	esac
+fi
 
-case ${host_cpu} in
-	powerpc | i386 | m68k)
-		if test -d $srcdir/rtems-gdb-stub; then
-		my_config_files="$my_config_files rtems-gdb-stub/Makefile"
-		enable_subdirs="${enable_subdirs} rtems-gdb-stub"
-		fi 
-	;;
-	*)
-	;;
-esac
+if test -d $srcdir/rtems-gdb-stub; then
+	AC_CONFIG_FILES([rtems-gdb-stub/Makefile])
+	all_subdirs="$all_subdirs rtems-gdb-stub"
+	case ${host_cpu} in
+		powerpc | i386 | m68k)
+			enable_subdirs="${enable_subdirs} rtems-gdb-stub"
+		;;
+		*)
+		;;
+	esac
+fi
 
 # Check for PCI support
 AC_MSG_NOTICE([Checking for PCI support of your BSP])
@@ -100,11 +102,13 @@ AC_CHECK_FUNC(pci_find_device)
 # which is good enough
 AC_CHECK_FUNCS([BSP_commandline_string])
 AC_CHECK_DECL([BSP_commandline_string],
-	[AC_DEFINE([DECL_BSP_COMMANDLINE_STRING],1,[Whether BSP_commandline_string is declared in <bsp.h>])],
-	,,[INCLUDES=bsp.h])
+	[AC_DEFINE([DECL_BSP_COMMANDLINE_STRING],1,[Whether BSP_commandline_string is declared in <bsp.h>])],,
+	[#include <rtems.h>
+	#include <bsp.h>])
 
 if test -d $srcdir/telnetd ; then
-	my_config_files="$my_config_files telnetd/Makefile"
+	AC_CONFIG_FILES([telnetd/Makefile])
+	all_subdirs="${all_subdirs} telnetd"
 	enable_subdirs="${enable_subdirs} telnetd"
 	AC_MSG_CHECKING([if bundled rtems_telnetd_initialize() takes 6 args])
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <rtems.h>
@@ -125,33 +129,39 @@ if test -d $srcdir/telnetd ; then
 fi
 
 if test -d $srcdir/miscUtils ; then
-my_config_files="$my_config_files miscUtils/Makefile"
-enable_subdirs="${enable_subdirs} miscUtils"
+	AC_CONFIG_FILES([miscUtils/Makefile])
+	enable_subdirs="${enable_subdirs} miscUtils"
+	all_subdirs="${all_subdirs} miscUtils"
 fi
 
 if test -d $srcdir/monitor ; then
+	AC_CONFIG_FILES([monitor/Makefile])
+	all_subdirs="${all_subdirs} monitor"
 	if test "${enable_tecla}" = "no" ; then
 		AC_MSG_NOTICE(['monitor' package disabled because you disabled TECLA -- the monitor would depend on it])
 	else
-		my_config_files="$my_config_files monitor/Makefile"
 		enable_subdirs="${enable_subdirs} monitor"
 	fi
 fi
 
 if test -d $srcdir/ntpNanoclock ; then
-my_config_files="$my_config_files ntpNanoclock/Makefile"
-enable_subdirs="${enable_subdirs} ntpNanoclock"
+	AC_CONFIG_FILES([ntpNanoclock/Makefile])
+	all_subdirs="${all_subdirs} ntpNanoclock"
+	enable_subdirs="${enable_subdirs} ntpNanoclock"
 fi
 
 
 if test -d $srcdir/cexp ; then
-enable_subdirs="$enable_subdirs cexp"
-AC_CONFIG_SUBDIRS([cexp])
-AC_DEFINE(HAVE_CEXP,1,[Whether CEXP is installed])
-have_cexp=yes
+	all_subdirs="$all_subdirs cexp"
+	enable_subdirs="$enable_subdirs cexp"
+	AC_CONFIG_SUBDIRS([cexp])
+	AC_DEFINE(HAVE_CEXP,1,[Whether CEXP is installed])
+	have_cexp=yes
 fi
 
 if test -d $srcdir/svgmWatchdog ; then
+	AC_CONFIG_FILES([svgmWatchdog/Makefile])
+	all_subdirs="${all_subdirs} svgmWatchdog"
 	# Do we have BSP support for our watchdog
 	AC_MSG_CHECKING([Looking for BSP support for the watchdog])
 	if test -f $srcdir/svgmWatchdog/bsp_${enable_rtemsbsp}.c ; then
@@ -169,30 +179,38 @@ if test -d $srcdir/svgmWatchdog ; then
 		AC_MSG_RESULT([FAILED. Watchdog not supported on this platform])
 	fi
 	if test "${WATCHDOG_BSP_SUPPORT+set}" = "set" ; then
-		my_config_files="$my_config_files svgmWatchdog/Makefile"
 		enable_subdirs="${enable_subdirs} svgmWatchdog"
 		AC_SUBST([WATCHDOG_BSP_SUPPORT])
 	fi
 fi
 
-if test "${enable_rtemsbsp}" = "uC5282" && test -d $srcdir/coldfUtils ; then
-	my_config_files="$my_config_files coldfUtils/Makefile"
-	enable_subdirs="${enable_subdirs} coldfUtils"
+if test -d $srcdir/coldfUtils ; then
+	AC_CONFIG_FILES([coldfUtils/Makefile])
+	all_subdirs="${all_subdirs} coldfUtils"
+	if test "${enable_rtemsbsp}" = "uC5282" ; then
+		enable_subdirs="${enable_subdirs} coldfUtils"
+	fi
 fi
 
-if test "${host_cpu}" = "powerpc" && test -d $srcdir/efence ; then
+if test -d $srcdir/efence ; then
+	AC_CONFIG_FILES([efence/Makefile])
+	all_subdirs="${all_subdirs} efence"
+	if test "${host_cpu}" = "powerpc" ; then
 # should really check if this is a >= 604 PPC
-	AC_CHECK_HEADER([libcpu/pte121.h],
-		[my_config_files="$my_config_files efence/Makefile"
-		enable_subdirs="${enable_subdirs} efence"],
+		AC_CHECK_HEADER([libcpu/pte121.h],
+		[enable_subdirs="${enable_subdirs} efence"],
 		[AC_MSG_NOTICE([No <libcpu/pte121.h> found; not building libefence])]dnl
-	)
+		)
+	fi
 fi
 
-if test "${host_cpu}" = "powerpc" && test -d $srcdir/altivec ; then
-	AC_MSG_NOTICE([Checking if PPC_CACHE_ALIGNMENT is 32 bytes])
-	AC_COMPILE_IFELSE(
-		[AC_LANG_PROGRAM(
+if test -d $srcdir/altivec ; then
+	AC_CONFIG_FILES([altivec/Makefile])
+	all_subdirs="${all_subdirs} altivec"
+	if test "${host_cpu}" = "powerpc" ; then
+		AC_MSG_NOTICE([Checking if PPC_CACHE_ALIGNMENT is 32 bytes])
+		AC_COMPILE_IFELSE(
+			[AC_LANG_PROGRAM(
 [[
 #include <rtems.h>
 #include <rtems/powerpc/powerpc.h>
@@ -201,16 +219,17 @@ if test "${host_cpu}" = "powerpc" && test -d $srcdir/altivec ; then
 #error "Altivec support assumes cache-line size of 32 bytes"
 #endif
 ]],[[]])],
-		[AC_MSG_RESULT([Ok])
-		my_config_files="$my_config_files altivec/Makefile"
-		enable_subdirs="${enable_subdirs} altivec"],
-		[AC_MSG_RESULT([No; not building AltiVec extension])]dnl
-	)
+			[AC_MSG_RESULT([Ok])
+			enable_subdirs="${enable_subdirs} altivec"],
+			[AC_MSG_RESULT([No; not building AltiVec extension])]dnl
+		)
+	fi
 fi
 
 if test -d $srcdir/amdeth ; then
+	AC_CONFIG_FILES([amdeth/Makefile])
+	all_subdirs="${all_subdirs} amdeth"
 	if test "$ac_cv_func_pci_find_device" = "yes" ; then
-		my_config_files="$my_config_files amdeth/Makefile"
 		enable_subdirs="${enable_subdirs} amdeth"
 	else
 		AC_MSG_NOTICE([Your BSP doesn't seem to have PCI; not building the amdeth driver])
@@ -218,6 +237,8 @@ if test -d $srcdir/amdeth ; then
 fi
 
 if test -d $srcdir/drvLan9118 ; then
+	AC_CONFIG_FILES([drvLan9118/Makefile])
+	all_subdirs="${all_subdirs} drvLan9118"
 	case $enable_rtemsbsp in 
 		uC5282 | beatnik)
 			LANIPBASIC_SUPPORT="${enable_rtemsbsp}"
@@ -229,12 +250,18 @@ if test -d $srcdir/drvLan9118 ; then
 		;;
 	esac
 	if test "${LANIPBASIC_SUPPORT+set}" = "set" ; then
-		my_config_files="$my_config_files drvLan9118/Makefile"
 		enable_subdirs="${enable_subdirs} drvLan9118"
 		AC_SUBST(LANIPBASIC_SUPPORT)
 	else
 		AC_MSG_NOTICE([lanIpBasic package not supported by this BSP -- not built])
 	fi
+fi
+
+if test -d $srcdir/rtemsNfs ; then
+	AC_CONFIG_FILES([rtemsNfs/proto/Makefile])
+	AC_CONFIG_FILES([rtemsNfs/Makefile])
+	AC_CONFIG_FILES([rtemsNfs/src/Makefile])
+	all_subdirs="${all_subdirs} rtemsNfs"
 fi
 
 # looking for bundled NFS;
@@ -260,24 +287,20 @@ AC_CHECK_LIB([nfs],[nfsMount],
 AC_MSG_RESULT([Building unbundled NFS: $build_rtems_nfs])
 
 if test ! "$build_rtems_nfs" = "no" ; then
-	if test "$build_rtems_nfs" = "yes" ; then
-		my_config_files="$my_config_files rtemsNfs/proto/Makefile"
-	fi
-	my_config_files="$my_config_files rtemsNfs/Makefile"
-	my_config_files="$my_config_files rtemsNfs/src/Makefile"
 	enable_subdirs="${enable_subdirs} rtemsNfs"
 fi
 
 if test -d $srcdir/bsd_eth_drivers ; then
+	AC_CONFIG_FILES([bsd_eth_drivers/Makefile])
+	AC_CONFIG_FILES([bsd_eth_drivers/libbsdport/Makefile])
+	AC_CONFIG_FILES([bsd_eth_drivers/if_pcn/Makefile])
+	AC_CONFIG_FILES([bsd_eth_drivers/if_le/Makefile])
+	AC_CONFIG_FILES([bsd_eth_drivers/if_em/Makefile])
+	all_subdirs="${all_subdirs} bsd_eth_drivers"
 	if test "$ac_cv_func_pci_find_device" = "yes" ; then
 		if test "${host_cpu}" = i386 && test ! "${have_bspext}" = yes ; then
 			AC_MSG_NOTICE([Not building bsd_eth_drivers; on i386 you need libbspExt])
 		else
-			my_config_files="$my_config_files bsd_eth_drivers/Makefile"
-			my_config_files="$my_config_files bsd_eth_drivers/libbsdport/Makefile"
-			my_config_files="$my_config_files bsd_eth_drivers/if_pcn/Makefile"
-			my_config_files="$my_config_files bsd_eth_drivers/if_le/Makefile"
-			my_config_files="$my_config_files bsd_eth_drivers/if_em/Makefile"
 			#FIXME: make these configurable options
 			ENBL_82542_SUPPORT=NO
 			ENBL_ICH8LAN_SUPPORT=YES
@@ -289,12 +312,13 @@ if test -d $srcdir/bsd_eth_drivers ; then
 fi
 
 if test -d $srcdir/netboot ; then
+	AC_CONFIG_FILES([netboot/Makefile])
+	all_subdirs="${all_subdirs} netboot"
 	case "$enable_rtemsbsp" in
 		svgm|beatnik|uC5282|mvme3100)
 			if test "${enable_tecla}" = "no" ; then
 				AC_MSG_NOTICE(['netboot' package disabled because you disabled TECLA -- the monitor would depend on it])
 			else
-				my_config_files="$my_config_files netboot/Makefile"
 				enable_subdirs="${enable_subdirs} netboot"
 				case "$enable_rtemsbsp" in
 					svgm)
@@ -310,20 +334,22 @@ if test -d $srcdir/netboot ; then
 	esac
 fi
 
+system_subdir=
 if test -d $srcdir/system ; then
+	all_subdirs="$all_subdirs system"
 	case "$enable_rtemsbsp" in
 		rce405)
 		# real application is built somewhere else
 		;;
 		*)
 			enable_subdirs="$enable_subdirs system"
+			AC_CONFIG_FILES([ssrlApps.components])
 			AC_CONFIG_SUBDIRS([system])
-			# AC_CONFIG_COMMANDS_POST is executed anyways; we therefore
-			# must test for presence of srcdir/system again.
-			AC_CONFIG_COMMANDS_POST([if test -d $srcdir/system -a ! -h system/data ; then ln -s ../data system/data; fi])
 		;;
 	esac
 fi
+
+AC_SUBST([system_subdir])
 
 # an ugly hack so we can give programs that
 # should run on the build host a different
@@ -334,11 +360,9 @@ fi
 AC_SUBST([HOSTPROGRAM],['$(HOSTPROG)$(HOSTEXEEXT)'])
 AC_SUBST([installexechostbinprogs],[install-exechostbinPROGRAMS])
 
-AM_CONDITIONAL([HAVE_CEXP],[test "$have_cexp" = "yes"])
-AM_CONDITIONAL([BUILD_RTEMS_NFS],[test "$build_rtems_nfs" = "yes"])
-AM_CONDITIONAL([HAVE_BUNDLED_TELNETD],[test "$have_bundled_telnetd" = "yes"])
-AM_CONDITIONAL([NETBOOT_COMPRESSED],[test "$netboot_compressed" = "yes"])
-
-AC_CONFIG_FILES([$my_config_files])
+AM_CONDITIONAL([HAVE_CEXP],             [test "$have_cexp"            = "yes"])
+AM_CONDITIONAL([BUILD_RTEMS_NFS],       [test "$build_rtems_nfs"      = "yes"])
+AM_CONDITIONAL([HAVE_BUNDLED_TELNETD],  [test "$have_bundled_telnetd" = "yes"])
+AM_CONDITIONAL([NETBOOT_COMPRESSED],    [test "$netboot_compressed"   = "yes"])
 
 AC_OUTPUT
