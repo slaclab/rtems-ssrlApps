@@ -1,10 +1,13 @@
 #!/bin/sh
 
 localhack=
-while getopts "l" theopt ; do
+while getopts "lf" theopt ; do
 	case $theopt in
 		l)
 			localhack=yes
+		;;
+		f)
+			force=--force
 		;;
 		*)
 		;;
@@ -39,4 +42,4 @@ if test "$localhack" = "yes" ; then
 	fi
 	export	ACLOCAL="$ACLOCAL -I `(cd \`dirname $0\`; pwd)`/autognu"
 fi
-autoreconf -i
+autoreconf -i $force
