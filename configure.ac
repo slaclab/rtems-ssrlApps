@@ -25,32 +25,6 @@ AC_SUBST([all_subdirs])
 AC_SUBST([rtems_cpu],[$host_cpu])
 AC_SUBST([rtems_bsp],[$enable_rtemsbsp])
 
-if test "${exec_prefix}" = "NONE" ; then
-	exec_prefix='${prefix}/target/ssrlApps/${host_cpu}-${host_os}'/${rtems_bsp}/
-	ac_configure_args="${ac_configure_args} --exec-prefix='${exec_prefix}'"
-fi
-
-# Unfortunately we have no way to check if includedir was set by the user
-# other than scanning the argument line :-(
-tillac_rtems_includedir_set=no
-for tillac_rtems_arg in ${ac_configure_args} ; do
-	case $tillac_rtems_arg in
-		-includedir | --includedir | --includedi | --included | --include \
-		| --includ | --inclu | --incl | --inc \
-        | -includedir=* | --includedir=* | --includedi=* | --included=* | --include=* \
-	    | --includ=* | --inclu=* | --incl=* | --inc=*)
-		tillac_rtems_includedir_set=yes;
-		;;
-	*)
-	    ;;
-	esac
-done
-
-if test "${tillac_rtems_includedir_set}" = "no" ; then
-	includedir='${exec_prefix}/include'
-	ac_configure_args="${ac_configure_args} --includedir='${includedir}'"
-fi
-
 # Let this configure and sub-configures search
 # the temporary installdir for includes and libraries...
 CPPFLAGS="$CPPFLAGS -I`pwd`/data/include"

@@ -70,6 +70,15 @@ AC_DEFUN([TILLAC_RTEMS_OPTIONS],
 		),
 		[AC_SUBST([hostbindir],[$with_hostbindir])],
 		[AC_SUBST([hostbindir],['$(prefix)/host/$(build_alias)/bin'])]
+	)
+	AC_ARG_ENABLE([std-rtems-installdirs],
+		AC_HELP_STRING([--enable-std-rtems-installdirs],
+		[install directly into
+		the RTEMS installation directories; by default a location *outside*
+		of the standard location is used. If you don't use this option you
+		can also fine-tune the installation using the usual --prefix, 
+		--exec-prefix, --libdir, --includedir etc. options]dnl
+		)
 	)]dnl
 )
 
@@ -347,11 +356,13 @@ AC_DEFUN([TILLAC_RTEMS_VERSTEST],
 
 
 AC_DEFUN([TILLAC_RTEMS_SETUP],
-	[m4_if($1,domultilib,[TILLAC_RTEMS_MULTILIB([Makefile],[.])],
-	[AC_REQUIRE([TILLAC_RTEMS_OPTIONS])dnl
-	if test "${enable_multilib}" = "yes" ; then
-	 	AC_MSG_ERROR(["multilibs not supported, sorry"])
-	fi])
+	[m4_if($1,domultilib,
+		[TILLAC_RTEMS_MULTILIB([Makefile],[.])],
+		[AC_REQUIRE([TILLAC_RTEMS_OPTIONS])dnl
+		if test "${enable_multilib}" = "yes" ; then
+		 	AC_MSG_ERROR(["multilibs not supported, sorry"])
+		fi]dnl
+	)
 	AM_CONDITIONAL(OS_IS_RTEMS,[TILLAC_RTEMS_OS_IS_RTEMS])
 	if TILLAC_RTEMS_OS_IS_RTEMS ; then
 		TILLAC_RTEMS_CHECK_TOP
@@ -369,6 +380,7 @@ AC_DEFUN([TILLAC_RTEMS_SETUP],
 			TILLAC_RTEMS_CHECK_BSPS
 			TILLAC_RTEMS_CONFIG_BSPS_RECURSIVE(makefile)
 		fi
+		TILLAC_RTEMS_FIXUP_PREFIXES
 dnl set those in the configure script so that 'configure' uses these settings when trying to compile stuff
 dnl		AC_SUBST(rtems_gccspecs,   [$tillac_rtems_gccspecs])
 dnl		AC_SUBST(rtems_cpu_cflags, [$tillac_rtems_cpu_cflags])
@@ -458,3 +470,62 @@ AC_DEFUN([TILLAC_RTEMS_BSP_POSTLINK_CMDS],
 	AM_CONDITIONAL([HAVE_BSP_POSTLINK_CMDS], [test ! "$RTEMS_BSP_POSTLINK_CMDS"xx = "xx" ])]dnl
 )
 
+# fixup the 'exec-prefix' and 'includedir' options:
+#  - if either is given explicitly by the user then do nothing
+#  - if user says --enable-std-rtems-installdirs then
+#      prefix      -> ${rtems_top} 
+#      exec-prefix -> ${prefix}/<cpu>/
+#      libdir      -> ${exec-prefix}/<bsp>/lib
+#      incdir      -> ${libdir}/include
+#
+#  - if user says nothing then
+#
+#      exec-prefix -> ${prefix}/target/ssrlApps/<cpu>/<bsp>/
+#      includedir  -> ${exec-prefix}/include
+#    
+AC_DEFUN([TILLAC_RTEMS_FIXUP_PREFIXES],
+[
+AC_REQUIRE([TILLAC_RTEMS_OPTIONS])
+if TILLAC_RTEMS_OS_IS_RTEMS ; then
+if test "${enable_std_rtems_installdirs}" = "yes" ; then
+	prefix=${with_rtems_top}
+	exec_prefix='${prefix}/${host_cpu}-${host_os}/'
+	libdir='${exec_prefix}/${rtems_bsp}/lib'
+	if test "$enable_multilib" = "yes" ; then
+		includedir='${exec_prefix}/include'
+	else
+		includedir='${libdir}/include'
+	fi
+	ac_configure_args="${ac_configure_args} --prefix='${prefix}'"
+	ac_configure_args="${ac_configure_args} --exec-prefix='${exec_prefix}'"
+	ac_configure_args="${ac_configure_args} --libdir='${libdir}'"
+	ac_configure_args="${ac_configure_args} --includedir='${includedir}'"
+else
+# should be correct also for multilibbed build (rtems_bsp empty)
+	if test "${exec_prefix}" = "NONE" ; then
+		exec_prefix='${prefix}/target/ssrlApps/${host_cpu}-${host_os}/${rtems_bsp}/'
+		ac_configure_args="${ac_configure_args} --exec-prefix='${exec_prefix}'"
+	fi
+	# Unfortunately we have no way to check if includedir was set by the user
+	# other than scanning the argument line :-(
+	tillac_rtems_includedir_set=no
+	for tillac_rtems_arg in ${ac_configure_args} ; do
+	case $tillac_rtems_arg in
+		-includedir | --includedir | --includedi | --included | --include \
+		| --includ | --inclu | --incl | --inc \
+        | -includedir=* | --includedir=* | --includedi=* | --included=* | --include=* \
+	    | --includ=* | --inclu=* | --incl=* | --inc=*)
+		tillac_rtems_includedir_set=yes;
+		;;
+	*)
+	    ;;
+	esac
+	done
+
+	if test "${tillac_rtems_includedir_set}" = "no" ; then
+		includedir='${exec_prefix}/include'
+		ac_configure_args="${ac_configure_args} --includedir='${includedir}'"
+	fi
+fi
+fi]dnl
+)
