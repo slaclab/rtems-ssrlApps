@@ -490,7 +490,7 @@ if TILLAC_RTEMS_OS_IS_RTEMS ; then
 if test "${enable_std_rtems_installdirs}" = "yes" ; then
 	prefix=${with_rtems_top}
 	exec_prefix='${prefix}/${host_cpu}-${host_os}/'
-	libdir='${exec_prefix}/${rtems_bsp}/lib'
+	libdir='${exec_prefix}/'${enable_rtemsbsp}/lib
 	if test "$enable_multilib" = "yes" ; then
 		includedir='${exec_prefix}/include'
 	else
@@ -503,7 +503,7 @@ if test "${enable_std_rtems_installdirs}" = "yes" ; then
 else
 # should be correct also for multilibbed build (rtems_bsp empty)
 	if test "${exec_prefix}" = "NONE" ; then
-		exec_prefix='${prefix}/target/ssrlApps/${host_cpu}-${host_os}/${rtems_bsp}/'
+		exec_prefix='${prefix}/target/ssrlApps/${host_cpu}-${host_os}/'${enable_rtemsbsp}/
 		ac_configure_args="${ac_configure_args} --exec-prefix='${exec_prefix}'"
 	fi
 	# Unfortunately we have no way to check if includedir was set by the user
