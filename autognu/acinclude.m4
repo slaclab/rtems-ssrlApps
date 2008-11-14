@@ -94,12 +94,12 @@ AC_DEFUN([TILLAC_RTEMS_OS_IS_RTEMS],
 AC_DEFUN([TILLAC_RTEMS_CPUKIT_MULTILIB],
 	[AC_REQUIRE([AC_CANONICAL_HOST])
 	AC_REQUIRE([TILLAC_RTEMS_OPTIONS])
-	test -d ${with_rtems_top}/${host_cpu}-rtems/include]dnl
+	test -d ${with_rtems_top}/${host_cpu}-${host_os}/include]dnl
 )
 
 # Verify that the --with-rtems-top option has been given
 # and that the directory it specifies has a subdirectory
-# ${with_rtems_top}/${host_cpu}-rtems
+# ${with_rtems_top}/${host_cpu}-${host_os}
 #
 # TILLAC_RTEMS_CHECK_TOP
 #
@@ -111,8 +111,8 @@ AC_DEFUN([TILLAC_RTEMS_CHECK_TOP],
             AC_MSG_ERROR([No RTEMS topdir given; use --with-rtems-top option])
         fi
         AC_MSG_CHECKING([Checking RTEMS installation topdir])
-        if test ! -d $with_rtems_top/${host_cpu}-rtems/ ; then
-            AC_MSG_ERROR([RTEMS topdir $with_rtems_top/${host_cpu}-rtems/ not found])
+        if test ! -d $with_rtems_top/${host_cpu}-${host_os}/ ; then
+            AC_MSG_ERROR([RTEMS topdir $with_rtems_top/${host_cpu}-${host_os}/ not found])
         fi
         AC_MSG_RESULT([OK])
     fi
@@ -123,14 +123,14 @@ AC_DEFUN([TILLAC_RTEMS_CHECK_BSPS],
 	[AC_REQUIRE([TILLAC_RTEMS_CHECK_TOP])
     AC_REQUIRE([TILLAC_RTEMS_OPTIONS])
     if test ! "${enable_rtemsbsp+set}" = "set" ; then
-        _tillac_rtems_bsplist="`ls $with_rtems_top/${host_cpu}-rtems/`"
+        _tillac_rtems_bsplist="`ls $with_rtems_top/${host_cpu}-${host_os}/`"
 	else
 		_tillac_rtems_bsplist=$enable_rtemsbsp
 	fi
 	enable_rtemsbsp=
 	AC_MSG_CHECKING([Looking for RTEMS BSPs $_tillac_rtems_bsplist])
 	for _tillac_rtems_bspcand in $_tillac_rtems_bsplist ; do
-		if test -d $with_rtems_top/${host_cpu}-rtems/$_tillac_rtems_bspcand/lib/include ; then
+		if test -d $with_rtems_top/${host_cpu}-${host_os}/$_tillac_rtems_bspcand/lib/include ; then
 			if test "${enable_rtemsbsp}"xx = xx ; then
 				enable_rtemsbsp="$_tillac_rtems_bspcand"
 			else
@@ -190,8 +190,8 @@ AC_DEFUN([TILLAC_RTEMS_CONFIG_BSPS_RECURSIVE],
 				;;
 			esac
 			TILLAC_RTEMS_RESET_MAKEVARS
-			TILLAC_RTEMS_MAKEVARS(${host_cpu}-rtems,$_tillac_rtems_bsp)
-			tillac_rtems_cppflags="$tillac_rtems_cppflags -I$with_rtems_top/${host_cpu}-rtems/$_tillac_rtems_bsp/lib/include"
+			TILLAC_RTEMS_MAKEVARS(${host_cpu}-${host_os},$_tillac_rtems_bsp)
+			tillac_rtems_cppflags="$tillac_rtems_cppflags -I$with_rtems_top/${host_cpu}-${host_os}/$_tillac_rtems_bsp/lib/include"
 			TILLAC_RTEMS_EXPORT_MAKEVARS($_tillac_rtems_bsp)
 			AC_MSG_NOTICE([Running $_tillac_rtems_dir/[$]0 $_tillac_rtems_config_args --enable-rtemsbsp=$_tillac_rtems_bsp in $_tillac_rtems_bsp subdir])
 			eval \( cd $_tillac_rtems_bsp \; $SHELL $_tillac_rtems_dir/"[$]0" $_tillac_rtems_config_args --enable-rtemsbsp=$_tillac_rtems_bsp \)
@@ -283,8 +283,8 @@ AC_DEFUN([TILLAC_RTEMS_EXPORT_MAKEVARS],
 		AC_MSG_RESULT([No (probably a multilibbed build)]) 
 		export RTEMS_TILL_MAKEVARS_SET=YES
 		# if this is a multilibbed cpukit we need to include
-		if test -d $with_rtems_top/${host_cpu}-rtems/include ; then
-			tillac_rtems_cppflags="$tillac_rtems_cppflags -I$with_rtems_top/${host_cpu}-rtems/include"
+		if test -d $with_rtems_top/${host_cpu}-${host_os}/include ; then
+			tillac_rtems_cppflags="$tillac_rtems_cppflags -I$with_rtems_top/${host_cpu}-${host_os}/include"
 		fi
 		if test "${with_extra_incdirs+set}" = "set" ; then
 			for tillac_extra_incs_val in ${with_extra_incdirs} ; do
