@@ -447,7 +447,7 @@ AC_DEFUN([TILLAC_RTEMS_BSP_POSTLINK_CMDS],
 	[AC_ARG_VAR([RTEMS_BSP_POSTLINK_CMDS],[Command sequence to convert ELF file into downloadable executable])
 	AC_MSG_NOTICE([Setting RTEMS_BSP_POSTLINK_CMDS based on RTEMS_BSP_FAMILY])
 	case "$RTEMS_BSP_FAMILY" in
-		svgm|beatnik|mvme5500|mvme3100|uC5282)
+		svgm|beatnik|mvme5500|mvme3100|uC5282|mvme167|mvme162)
 # convert ELF -> pure binary
 			RTEMS_BSP_POSTLINK_CMDS='$(OBJCOPY) -Obinary $(basename $[@])$(APPEXEEXT) $[@]'
 		;;
