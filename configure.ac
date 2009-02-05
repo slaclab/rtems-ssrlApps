@@ -43,6 +43,7 @@ enable_subdirs=
 all_subdirs=
 
 if test -d $srcdir/libbspExt ; then
+	have_bspext=yes
 	AC_CONFIG_FILES([libbspExt/Makefile])
 	all_subdirs="$all_subdirs libbspExt"
 	case ${host_cpu} in
