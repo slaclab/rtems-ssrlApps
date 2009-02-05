@@ -54,7 +54,7 @@ AC_DEFUN([TILLAC_RTEMS_CONFIG_CPUS_RECURSIVE],
 				if eval "case `echo $_tillac_rtems_bspcand` in $_tillac_rtems_bspfilt) : ;; *) false ;; esac" ; then
 					# only add candidate to list of cpus if not already there
 					_tillac_rtems_cpufilt=`echo "$_tillac_rtems_cpulist" | sed -e 's/[[ \t]]\+/|/g'`
-					if eval "case `echo $_tillac_rtems_cpucand` in $_tillac_rtems_cpufilt) false ;; *) : ;; esac" ; then
+					if test -z $_tillac_rtems_cpufilt || eval "case `echo $_tillac_rtems_cpucand` in $_tillac_rtems_cpufilt) false ;; *) : ;; esac" ; then
 						_tillac_rtems_cpulist="$_tillac_rtems_cpulist $_tillac_rtems_cpucand"
 					fi
 				fi
