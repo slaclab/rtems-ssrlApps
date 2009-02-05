@@ -167,7 +167,7 @@ extern unsigned long long Read_long_timer();
 #endif
 #else
 #include <rtems/rtems/clock.h>
-#define TICKS_PER_S TOD_TICKS_PER_SECOND
+#define TICKS_PER_S (((unsigned long)1000000)/_TOD_Microseconds_per_tick)
 #define US_PER_TICK _TOD_Microseconds_per_tick
 #endif
 
