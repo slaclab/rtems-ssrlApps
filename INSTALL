@@ -6,254 +6,48 @@ Till Straumann, 2008/10/3
 
 ***************************************************
 THIS FILE HAS NOT BEEN WRITTEN YET, SORRY!
+
+Some useful information regarding 'configure' options
+can be found in cexp/INSTALL.
+
+Basic instructions:
+
+ - make sure PATH contains toolchain directory
+ - mkdir build
+ - chdir build
+ - ../configure --with-rtems-top=/afs/slac/package/rtems/<version> \
+                --prefix=/afs/slac/package/rtems/<version>
+ - make
+ - make install
+
+This builds ssrlApps for all architectures/BSPs which are installed
+under --with-rtems-top. The list of BSPs can be explicitly defined
+using --with-rtemsbsp='bsp1 bsp2 bsp3 ...'.
+
+The default installation path for binaries, libraries and includes is
+
+ <prefix>/target/ssrlApps/<cpu>-rtems/<bsp>/bin
+ <prefix>/target/ssrlApps/<cpu>-rtems/<bsp>/lib
+ <prefix>/target/ssrlApps/<cpu>-rtems/<bsp>/include
+
+but can be modified using the standard --exec-prefix, --libdir, --includedir
+options (see 'configure' documentation and cexp/INSTALL).
+
+Other useful options:
+
+    --enable-std-rtems-installdirs
+            Install directly into the RTEMS installation directories;
+			by default a location *outside* of the standard location
+			is used. If you don't use this option you can also fine-tune
+			the installation using the usual --prefix, --exec-prefix,
+			--libdir, --includedir etc. options. If you use this
+			option '--prefix' & friends are effectively overridden.
+
+	--with-hostbindir=<path>
+			Where tools, i.e., programs that execute on the development
+			platform are to be installed. Defaults to
+
+			   PREFIX/host/${build_alias}/bin
+
+
 ***************************************************
-
-To build the software under 'ssrlApps'
-from scratch, the following steps are necessary:
-
- 0. Quick instructions for the impatient
- 1. Check out the sources from the CVS repository
- 2. Tune config/Makefile.inc to reflect the RTEMS
-    release, the BSP and the install location you want to
-    use.
- 3. Create 'configure' scripts in some source directories
- 4. Build and install the software
-
-Prerequisites
-=============
-
-In addition to the regular 'GNU' toolchain, two more
-host-tools, 'xsyms' and 'ldep' are needed. These
-utilites must be checked out from CVS (modules 'xsyms'
-and 'ldep', respectively), built and installed
-in a place where they can be found by the shell
-prior to building the ssrlApps.
-('xsyms' is optional if the symbol table is built/compiled
-into the system application. This is now the default.)
-
-0. Quick instructions for the impatient
-=======================================
-
-  - cvs checkout ssrlApps
-  - chdir ssrlApps
-  - edit config/Makefile.inc, set RTEMS_BSP, RTEMS_TOP
-    and RTEMS_SITE_DIR
-  - setenv RTEMS_MAKEFILE_PATH `pwd`/config
-  - gmake prep 	(only needed after CVS checkout; not needed
-    if working with a tarball or CD image)
-  - gmake install
-
-  - to cleanup, it may be necessary to manually remove the
-    xxx-build directories (normally done by 'gmake distclean').
-  - use 'gmake distclean' to remove built (but not the installed)
-    stuff.
-
-1. Checking out from CVS
-========================
-
-The RTEMS applications (we use the term 'application' for all
-individual packages although some of them are in fact 'libraries')
-are maintained in CVS as a 'module', i.e. you can check out all
-the applications with:
-
-   cvs checkout ssrlApps
-
-2. Tune config/Makefile.inc
-===========================
-Mainly, there are a few variables of interest in Makefile.inc
-
- - RTEMS_BSP defines the BSP to use.
-
- - RTEMS_TOP points to the place where RTEMS is installed.
-   You should find the 'make' and '<cpu>-rtems' directories
-   underneath RTEMS_TOP.
-
- - RTEMS_BASE points to the toolchain installation directory.
-   Note that every version of RTEMS comes with its own version
-   of the tools and especially: the C library. (There are
-   subtle dependencies between the compiler, the C library
-   and RTEMS itself as some parts of libc have to be implemented
-   by the system, others by the compiler. Therefore, it is crucial
-   to use matching versions of all components.)
-
-   The SSRL tailored RTEMS/Makefiles use absolute pathnames
-   to access tools to avoid problems due to version mismatches.
-
-   RTEMS_BASE is and should be the ONLY object pointing to a
-   particular RTEMS/toolchain version.
- 
-   The name 'RTEMS_BASE' is somewhat unfortunate but since EPICS
-   uses it, we inherit it...
-
- - RTEMS_SITE_DIR defines a path under which the ssrlApps
-   will be installed. Also, 'include' and 'lib' directories
-   are searched for headers and libraries when building 'ssrlApps'.
-
-   The idea is that you can point RTEMS_SITE_DIR to any place of
-   your convenience, build 'ssrlApps' and you end up
-   with an independent copy.
-
-   Make sure RTEMS_SITE_DIR is always set - some packages might
-   install into the RTEMS_TOP area otherwise; a place which should
-   not be cluttered. 
-
- - Note that the EPICS makefiles include 'config/Makefile.inc'
-   and hence EPICS must be re-built when changing to a different
-   RTEMS release. Building EPICS software transparently results
-   in using the correct tools and finding libraries / headers
-   installed in RTEMS_SITE_DIR (due to the paths defined in
-   the 'ssrlApps/config/xxx' files)
-
- 3. Create 'configure' scripts in some source directories
-=========================================================
-
-There are essentially two flavors of applications:
-
- - 'native' RTEMS applications. These use the RTEMS
-   Makefile system. README documents in the
-     <rtems_installation>/make
-   and
-     ssrlApps/config 
-   directories provide more information about these
-   Makefiles.
-   'telnetd' is an example for the first kind of package.
-
- - applications using the GNU 'autonightmare'. These
-   are mostly packages which have been either ported
-   to RTEMS or which are intended to work on a variety
-   of systems.
-
-   There exists a lot of information about GNU 'configure'
-   and 'automake' hence only a very brief summary is given.
-
-   The idea is that an application comes with a 'configure'
-   shell script to be run on the host system where the
-   software is to be built. The script then determines the
-   type of system the package is to be configured for and
-   checks for the availability of features required by
-   the package. 'configure' then creates appropriate
-   'Makefile's for building the software on the given
-   system. E.g. if a package needs a certain library,
-   'configure' could check for the presence of that
-   library and enable (by means of preprocessor symbols
-   etc.) workarounds in the package if the library
-   is found to be missing.
-
-   --- sidenote begin ---
-   'configure' can also handle cross-builds. Note the
-   confusing command line option needed for cross-
-   onfiguration E.g.:
-     'configure --host=powerpc-rtems'
-   executed on a solaris machine configures a package for
-   a powerpc-rtems host on a (autodetected) solaris build host.
-   'configure' interprets the term 'host' as the system
-   the package is intended to _run_ on, not the one it is
-   built on. The latter can be specified with the '--build=xxx'
-   option which is usually omitted (=autodetect).
-
-   NOTE: I found that (especially with newer versions of these
-   tools) it may be necessary to explicitely specify the
-   '--build' architecture. You can use the 'config.guess' script
-   for that purpose: --build=`<src_top>/config.guess`.
-
-   (The '--target' architecture is used for 'cross-tools', i.e.,
-   it specifies the architecture of the system the tool should
-   operate on. E.g., in case of a cross-compiler, what machine
-   it should emit code for.
-   --- sidenote end ---
-
-   The 'automake', 'autoconf' etc. suite of tools takes
-   this even one step further and generates the 'configure'
-   scripts and a bunch of other files from a number of
-   'meta' files. Usually, maintainers of a package only
-   keep these 'meta' files (Makefile.am, configure.ac)
-   under version control (CVS). This means, that the
-   'autotools' need to be run after a CVS checkout.
-   Note that it doesn't matter on which type of system
-   the 'autools' are run and using them is only necessary
-   after checkout or after changing one of the 'meta' files.
-
-   In summary:
-                                      run 'configure'          'gmake'
-                 autoconf             on build system          on build
-    CVS checkout  ------> 'configure' -------------> 'Makefile' --->  
-                 generates              generates              system
-                                      
-
-   One nice feature of 'configure' is the support for building
-   software in a subdirectory outside of the source tree.
-   The top-level Makefile of the 'ssrlApps' uses this 
-   feature and assumes that the package comes with a 'Makefile'
-   in its top directory which performs the necessary 'autoxxx'
-   steps.
-   The 'real', Makefiles are created by 'configure'
-   in a special 'build' directory, _outside_ of the package
-   source.
-   The top-level Makefile (i.e. ssrlApps/Makefile) has
-   a 'prep' target which recurses into all 'autoconf' supporting
-   package source directories and invokes their 'Makefile'
-   which in turn generates the 'configure' scripts.
-
-   E.g.
-
-     1. checkout  --> package source into 'ssrlApps/xxx'
-     2. chdir ssrlApps
-     3. setenv RTEMS_MAKEFILE_PATH `pwd`/config
-     2. gmake prep --> autotools invoked in 'xxx' generate 'xxx/configure'
-
-   Carefully watch for errors. Otherwise, you could get obscure
-   failures when building the application.
-
-   Note that the 'prep' step is only needed _once_, after CVS checkout
-   (or after messing with the 'configure.ac', 'Makefile.am' etc. files).
-   No need to perform this after 'gmake clean' or even 'gmake distclean'.
-
- 4. Build and install the software
-==================================
-
-The top-level Makefile in ssrlApps iterates through the
-list of subdirectories and runs 'configure' in the 'xxx-build'
-subdirectories.
-During a second iteration, the individual packages are build and
-installed one after another. Installation is necessary for some
-packages depend on others and require their headers/libraries
-being available under RTEMS_SITE_DIR as a build prerequisite.
-
-Prior to using any of the Makefiles, the environment variable
-RTEMS_MAKEFILE_PATH must be pointed to the 'ssrlApps/config'
-directory.
-
-Individual packages can be rebuilt in their respective subdirectory
-('configure'd packages are rebuilt in their 'xxx-build' subdirectory,
-_not_ the source directory). Note that the 'gmake install' step must
-explicitely be performed for the package being installed under the
-RTEMS_SITE_DIR area.
-
-'gmake distclean' vs. 'gmake clean': The latter removes all of the
-built targets (objects, libraries etc.), the former (implying 'clean')
-also removes the files generated by 'configure'. Because 'configure'
-always generates makefiles for a specific host system, it is necessary
-to 'gmake distclean' in the ssrlApps top directory when switching
-from one host architecture to another.
-
-linux>  chdir ssrlApps
-linux>  gmake install
-
---> 'configure' generates linux-specific Makefiles in cexp.powerpc-build
-
-solaris> chdir ssrlApps
-solaris> gmake distclean
-
---> all xxx.<target-arch>-build directories are removed
-
-solaris> gmake install
-
---> packages reconfigured and built for a solaris host
-
-You may determine the host architecture for which a xxx-build directory
-tree was configured by looking at the 'xxx-build/config.status' file to
-avoid an unnecessary (and quite lengthy) reconfiguration.
-
-Note that this is not necessary for the 'native' RTEMS applications
-(e.g. when rebuilding a 'native' application in its own subdirectory)
-as no host specific files are stored in their respective subdirectories.
