@@ -14,15 +14,28 @@
 #ifdef __rtems__
 #include <sys/socketvar.h>
 #include <sys/protosw.h>
-#include <sys/mbuf.h>
 #include <net/if.h>
 #include <net/if_var.h>
+
+#define _KERNEL
+#include <sys/mbuf.h>
 #endif
 
 #if ! defined(__rtems__) 
 
 #define LOCK()   do {} while (0)
 #define UNLOCK() do {} while (0)
+
+static int notsock(int fd)
+{
+#if 0
+struct stat sb;
+	return fstat(fd, &sb) || ! S_ISSOCK(sb.st_mode) ;
+#else
+	/* getsockname() on non-socket fails anyways */
+	return 0;
+#endif
+}
 
 #else /* __rtems__ */
 
@@ -53,6 +66,13 @@ struct sbstats {
 		u_int nmbufs;    /* number of mbufs in chain         */
 		short sb_flags;  /* flags                            */
 		int   sb_timeo;  /* timeout for read/write           */
+		u_int nmbcl1s;   /* number of single-ref. clusters   */
+		u_int nmbclms;   /* number of multiply ref. clusters */
+#ifndef NO_FLOATS
+		float cl_frac;   /* fractional cluster use           */
+#else
+		u_int cl_refs;   /* multiple cluster references      */
+#endif
 };
 
 /*
@@ -71,11 +91,27 @@ struct sostats {
 	struct sbstats so_rcv, so_snd;
 };
 
+static int
+holdsclust(struct mbuf *mb)
+{
+uintptr_t b = (uintptr_t)mbutl;
+uintptr_t e = (uintptr_t)mbutl + MCLBYTES * (mbstat.m_clusters - 1);
+
+	return (    (mb->m_flags & M_EXT)
+             && b <= mtod(mb, uintptr_t)
+             && e >  mtod(mb, uintptr_t) ) ;
+}
+
 static void
 getsbstats(struct sbstats *sbs, struct sockbuf *sob)
 {
 struct mbuf *mb, *mbp;
-u_int        k;
+u_int        k,c1,cm,i;
+#ifndef NO_FLOATS
+float        r = 0.;
+#else
+u_int        r = 0;
+#endif
 
 	sbs->sb_cc    = sob->sb_cc;
 	sbs->sb_hiwat = sob->sb_hiwat;
@@ -83,12 +119,39 @@ u_int        k;
 	sbs->sb_mbmax = sob->sb_mbmax;
 	sbs->sb_lowat = sob->sb_lowat;
 	/* count mbufs */
-	for ( k=0, mbp=sob->sb_mb; mbp; mbp=mbp->m_nextpkt ) {
+	for ( k=r=c1=cm=0, mbp=sob->sb_mb; mbp; mbp=mbp->m_nextpkt ) {
 		for ( mb = mbp; mb; mb=mb->m_next ) {
 			k++;
+			/* is a cluster attached ? */
+			if ( holdsclust(mb) ) {
+				/* a cluster may be referenced by other
+				 * mbufs; 'c' counts the clusters this
+				 * mbuf exclusively refers to.
+				 * so we can get an idea of, relatively
+				 * speaking, how many clusters this mb
+				 * holds
+				 */
+				if ( 1 == (i = mclrefcnt[mtocl(mtod(mb, int))]) ) {
+					c1++;
+				} else {
+					cm++;
+#ifndef NO_FLOATS
+					r += 1./(float)i;
+#else
+					r += i;
+#endif
+				}
+			}
 		}
 	}
 	sbs->nmbufs   = k;
+	sbs->nmbcl1s  = c1;
+	sbs->nmbclms  = cm;
+#ifndef NO_FLOATS
+	sbs->cl_frac  = r;
+#else
+	sbs->cl_refs  = r;
+#endif
 	sbs->sb_flags = sob->sb_flags;
 	sbs->sb_timeo = sob->sb_timeo;
 }
@@ -105,6 +168,15 @@ int rval = 0;
 
 	rval += fprintf(f, "     Number of mbufs in chain    : %u\n",      sb->nmbufs);
 	rval += fprintf(f, "     Chars of mbufs used         : %u\n",      sb->sb_mbcnt);
+
+	rval += fprintf(f, "     Number of cluster refs      : %u\n",      sb->nmbcl1s + sb->nmbclms);
+	rval += fprintf(f, "        single references        : %u\n",      sb->nmbcl1s);
+	rval += fprintf(f, "        multiple references      : %u\n",      sb->nmbclms);
+#ifndef NO_FLOATS
+	rval += fprintf(f, "        total use of clusters    : %g\n",      (double)sb->nmbcl1s + (double)sb->cl_frac);
+#else
+	rval += fprintf(f, "        referenced by others     : %u\n",      sb->cl_refs - sb->nmbclms);
+#endif
 
 	if ( level > 1 ) {
 		rval += fprintf(f, "     Chars in buffer             : %u\n",      sb->sb_cc);
@@ -137,6 +209,44 @@ int rval;
 	return rval;
 }
 
+static const void   *sockhandlers = 0;
+
+static void init_sockhdlrs()
+{
+int             dummyfd;
+rtems_libio_t   *iop;
+
+	if ( ! sockhandlers ) {
+		if ( (dummyfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
+			fprintf(stderr,"notsock: unable to initialize dummy socket!\n");
+			return ;
+		}
+		iop = rtems_libio_iop(dummyfd);
+		sockhandlers = iop->handlers;
+		close(dummyfd);
+	}
+}
+
+/*
+ * fstat() could cause network traffic (if file on network FS) which
+ * we must avoid since we hold the network semaphore!
+ * Resort to a crude test...
+ *
+ * NOTE: This is only required because RTEMS' socket operations 
+ *       don't test if a file descriptor is a socket but blindly
+ *       assume it is (if iop->data1 != NULL).
+ *       Ideally 'getsockname()' should return -1 and set
+ *       errno = ENOTSOCK if the passed descriptor is not 
+ *       referring to a socket.
+ */
+static int notsock(int fd)
+{
+rtems_libio_t       *iop;
+
+	iop = rtems_libio_iop(fd);
+
+	return !(iop->flags & LIBIO_FLAGS_OPEN) || iop->handlers != sockhandlers;
+}
 #endif
 
 int
@@ -150,7 +260,6 @@ struct sockaddr_in sin;
 } ss,sp;
 socklen_t       l;
 char            buf[100];
-struct stat     sb;
 #ifdef __rtems__
 /* grab a copy of some socket statistics */
 struct sostats  sostats;
@@ -160,6 +269,10 @@ rtems_libio_t   *iop     = 0;
 
 	if ( ! f )
 		f = stdout;
+
+#ifdef __rtems__
+	init_sockhdlrs();
+#endif
 
 	/* Since file-descriptor zero is usually the (serial) console
 	 * it will rarely be a socket. For convenience we use 'sd==0'
@@ -187,7 +300,7 @@ rtems_libio_t   *iop     = 0;
 	for ( i=min, j=0; i<max; i++ ) {
 		l = sizeof(ss);
 		LOCK();
-		if ( fstat(i, &sb) || ! S_ISSOCK(sb.st_mode) || getsockname(i, &ss.sa, &l) ) {
+		if ( notsock(i) || getsockname(i, &ss.sa, &l) ) {
 			UNLOCK();
 			continue;
 		}
@@ -294,6 +407,7 @@ CEXP_HELP_TAB_BEGIN(sockstats)
 	),
 CEXP_HELP_TAB_END
 #endif
+
 #ifndef __rtems__
 int main()
 {
