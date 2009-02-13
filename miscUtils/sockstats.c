@@ -250,7 +250,7 @@ rtems_libio_t       *iop;
 #endif
 
 int
-rtems_bsdnet_show_socket_stats(FILE *f, int level, int sd)
+rtems_bsdnet_show_socket_stats(int level, int sd, FILE *f)
 {
 int             i,j,e,min,max;
 
@@ -403,7 +403,7 @@ CEXP_HELP_TAB_BEGIN(sockstats)
 "RETURNS: number of live (used) sockets. The max. number of\n"
 "         file descriptors can be obtained from the (READ-ONLY)\n"
 "         variable 'rtems_libio_number_iops'.\n",
-	int, rtems_bsdnet_show_socket_stats,  (FILE *f, int level, int sd)
+	int, rtems_bsdnet_show_socket_stats,  (int level, int sd, FILE *f)
 	),
 CEXP_HELP_TAB_END
 #endif
