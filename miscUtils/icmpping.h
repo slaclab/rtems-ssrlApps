@@ -12,8 +12,8 @@
  *
  */
 
-#ifndef PING_H
-#define PING_H
+#ifndef SSRLAPPS_MISCUTILS_PING_H
+#define SSRLAPPS_MISCUTILS_PING_H
 
 #ifdef __cplusplus
 extern "C" {
