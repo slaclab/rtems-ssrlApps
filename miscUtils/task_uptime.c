@@ -7,9 +7,19 @@
 
 #include <math.h>
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#if defined(RTEMS_VERSION_ATLEAST) && RTEMS_VERSION_ATLEAST(4,8,99)
+#define HAVE_HIGHRES_TIME
+#endif
+
+
 rtems_status_code
 miscu_get_idle_uptime(struct timespec *pts)
 {
+#if defined(HAVE_HIGHRES_TIME)
 rtems_status_code sc = RTEMS_SUCCESSFUL;
 int               key;
 
@@ -22,11 +32,15 @@ int               key;
 	rtems_interrupt_enable(key);
 
 	return sc;
+#else
+	return RTEMS_NOT_IMPLEMENTED;
+#endif
 }
 
 rtems_status_code
 miscu_get_task_uptime(rtems_id tid, struct timespec *pts)
 {
+#if defined(HAVE_HIGHRES_TIME)
 Thread_Control    *tcb;
 Objects_Locations loc;
 
@@ -50,12 +64,16 @@ Objects_Locations loc;
 		break;
 	}
 	return RTEMS_INVALID_ID;
+#else
+	return RTEMS_NOT_IMPLEMENTED;
+#endif
 }
 
 /* Returns percentage or NAN (if difference to last uptime == 0) */
 double
 miscu_cpu_load_percentage(struct timespec *lst_uptime, struct timespec *lst_idletime)
 {
+#if defined(HAVE_HIGHRES_TIME)
 static struct timespec internal_up   = { 0., 0. };
 static struct timespec internal_idle = { 0., 0. };
 
@@ -89,6 +107,9 @@ double res;
 	*lst_idletime = now_idletime;
 
 	return res;
+#else
+	return nan("");
+#endif
 }
 
 void
