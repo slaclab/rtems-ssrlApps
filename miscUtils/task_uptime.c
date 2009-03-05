@@ -1,12 +1,4 @@
 /* $Id$ lightweight CPU usage */
-#include <rtems/system.h>
-#include <rtems/rtems/tasks.h>
-#include <rtems/score/timespec.h>
-
-#include <ssrlAppsMiscUtils.h>
-
-#include <math.h>
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -15,6 +7,13 @@
 #define HAVE_HIGHRES_TIME
 #endif
 
+#include <rtems/system.h>
+#include <rtems/rtems/tasks.h>
+#ifdef HAVE_HIGHRES_TIME
+#include <rtems/score/timespec.h>
+#endif
+
+#include <ssrlAppsMiscUtils.h>
 
 rtems_status_code
 miscu_get_idle_uptime(struct timespec *pts)
