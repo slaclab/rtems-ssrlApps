@@ -3,15 +3,18 @@
 #include <config.h>
 #endif
 
+#include <rtems/system.h>
+#include <rtems/rtems/tasks.h>
+
 #if defined(RTEMS_VERSION_ATLEAST) && RTEMS_VERSION_ATLEAST(4,8,99)
 #define HAVE_HIGHRES_TIME
 #endif
 
-#include <rtems/system.h>
-#include <rtems/rtems/tasks.h>
 #ifdef HAVE_HIGHRES_TIME
 #include <rtems/score/timespec.h>
 #endif
+
+#include <math.h>
 
 #include <ssrlAppsMiscUtils.h>
 
