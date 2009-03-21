@@ -42,8 +42,7 @@ AC_CONFIG_FILES([Makefile])
 enable_subdirs=
 all_subdirs=
 
-TILLAC_M4_IF_PRESENT([libbspExt],
-[if test -d $srcdir/libbspExt ; then
+if test -d $srcdir/libbspExt ; then
 	have_bspext=yes
 	AC_CONFIG_FILES([libbspExt/Makefile])
 	all_subdirs="$all_subdirs libbspExt"
@@ -55,11 +54,9 @@ TILLAC_M4_IF_PRESENT([libbspExt],
 		*)
 		;;
 	esac
-fi]dnl
-)
+fi
 
-TILLAC_M4_IF_PRESENT([rtems-gdb-stub],
-[if test -d $srcdir/rtems-gdb-stub; then
+if test -d $srcdir/rtems-gdb-stub; then
 	AC_CONFIG_FILES([rtems-gdb-stub/Makefile])
 	all_subdirs="$all_subdirs rtems-gdb-stub"
 	case ${host_cpu} in
@@ -69,8 +66,7 @@ TILLAC_M4_IF_PRESENT([rtems-gdb-stub],
 		*)
 		;;
 	esac
-fi]dnl
-)
+fi
 
 # Check for PCI support
 AC_MSG_NOTICE([Checking for PCI support of your BSP])
@@ -86,8 +82,7 @@ AC_CHECK_DECL([BSP_commandline_string],
 	[#include <rtems.h>
 	#include <bsp.h>])
 
-TILLAC_M4_IF_PRESENT([telnetd],
-[if test -d $srcdir/telnetd ; then
+if test -d $srcdir/telnetd ; then
 	AC_CONFIG_FILES([telnetd/Makefile])
 	all_subdirs="${all_subdirs} telnetd"
 	enable_subdirs="${enable_subdirs} telnetd"
@@ -107,19 +102,15 @@ TILLAC_M4_IF_PRESENT([telnetd],
 	],
 	[AC_MSG_NOTICE([No; building unbundled telnetd support])]
 	)
-fi]dnl
-)
+fi
 
-TILLAC_M4_IF_PRESENT([miscUtils],
-[if test -d $srcdir/miscUtils ; then
+if test -d $srcdir/miscUtils ; then
 	AC_CONFIG_FILES([miscUtils/Makefile])
 	enable_subdirs="${enable_subdirs} miscUtils"
 	all_subdirs="${all_subdirs} miscUtils"
-fi]dnl
-)
+fi
 
-TILLAC_M4_IF_PRESENT([monitor],
-[if test -d $srcdir/monitor ; then
+if test -d $srcdir/monitor ; then
 	AC_CONFIG_FILES([monitor/Makefile])
 	all_subdirs="${all_subdirs} monitor"
 	if test "${enable_tecla}" = "no" ; then
@@ -127,16 +118,13 @@ TILLAC_M4_IF_PRESENT([monitor],
 	else
 		enable_subdirs="${enable_subdirs} monitor"
 	fi
-fi]dnl
-)
+fi
 
-TILLAC_M4_IF_PRESENT([ntpNanoclock],
-[if test -d $srcdir/ntpNanoclock ; then
+if test -d $srcdir/ntpNanoclock ; then
 	AC_CONFIG_FILES([ntpNanoclock/Makefile])
 	all_subdirs="${all_subdirs} ntpNanoclock"
 	enable_subdirs="${enable_subdirs} ntpNanoclock"
-fi]dnl
-)
+fi
 
 
 if test -d $srcdir/cexp ; then
@@ -147,8 +135,7 @@ if test -d $srcdir/cexp ; then
 	have_cexp=yes
 fi
 
-TILLAC_M4_IF_PRESENT([svgmWatchdog],
-[if test -d $srcdir/svgmWatchdog ; then
+if test -d $srcdir/svgmWatchdog ; then
 	AC_CONFIG_FILES([svgmWatchdog/Makefile])
 	all_subdirs="${all_subdirs} svgmWatchdog"
 	# Do we have BSP support for our watchdog
@@ -171,21 +158,17 @@ TILLAC_M4_IF_PRESENT([svgmWatchdog],
 		enable_subdirs="${enable_subdirs} svgmWatchdog"
 		AC_SUBST([WATCHDOG_BSP_SUPPORT])
 	fi
-fi]dnl
-)
+fi
 
-TILLAC_M4_IF_PRESENT([coldfUtils],
-[if test -d $srcdir/coldfUtils ; then
+if test -d $srcdir/coldfUtils ; then
 	AC_CONFIG_FILES([coldfUtils/Makefile])
 	all_subdirs="${all_subdirs} coldfUtils"
 	if test "${enable_rtemsbsp}" = "uC5282" ; then
 		enable_subdirs="${enable_subdirs} coldfUtils"
 	fi
-fi]dnl
-)
+fi
 
-TILLAC_M4_IF_PRESENT([efence],
-[if test -d $srcdir/efence ; then
+if test -d $srcdir/efence ; then
 	AC_CONFIG_FILES([efence/Makefile])
 	all_subdirs="${all_subdirs} efence"
 	if test "${host_cpu}" = "powerpc" ; then
@@ -195,11 +178,9 @@ TILLAC_M4_IF_PRESENT([efence],
 		[AC_MSG_NOTICE([No <libcpu/pte121.h> found; not building libefence])]dnl
 		)
 	fi
-fi]dnl
-)
+fi
 
-TILLAC_M4_IF_PRESENT([altivec],
-[if test -d $srcdir/altivec ; then
+if test -d $srcdir/altivec ; then
 	AC_CONFIG_FILES([altivec/Makefile])
 	all_subdirs="${all_subdirs} altivec"
 	if test "${host_cpu}" = "powerpc" ; then
@@ -219,11 +200,9 @@ TILLAC_M4_IF_PRESENT([altivec],
 			[AC_MSG_RESULT([No; not building AltiVec extension])]dnl
 		)
 	fi
-fi]dnl
-)
+fi
 
-TILLAC_M4_IF_PRESENT([amdeth],
-[if test -d $srcdir/amdeth ; then
+if test -d $srcdir/amdeth ; then
 	AC_CONFIG_FILES([amdeth/Makefile])
 	all_subdirs="${all_subdirs} amdeth"
 	if test "$ac_cv_func_pci_find_device" = "yes" ; then
@@ -231,11 +210,9 @@ TILLAC_M4_IF_PRESENT([amdeth],
 	else
 		AC_MSG_NOTICE([Your BSP doesn't seem to have PCI; not building the amdeth driver])
 	fi
-fi]dnl
-)
+fi
 
-TILLAC_M4_IF_PRESENT([drvLan9118],
-[if test -d $srcdir/drvLan9118 ; then
+if test -d $srcdir/drvLan9118 ; then
 	AC_CONFIG_FILES([drvLan9118/Makefile])
 	all_subdirs="${all_subdirs} drvLan9118"
 	case $enable_rtemsbsp in 
@@ -254,17 +231,14 @@ TILLAC_M4_IF_PRESENT([drvLan9118],
 	else
 		AC_MSG_NOTICE([lanIpBasic package not supported by this BSP -- not built])
 	fi
-fi]dnl
-)
+fi
 
-TILLAC_M4_IF_PRESENT([rtemsNfs],
-[if test -d $srcdir/rtemsNfs ; then
+if test -d $srcdir/rtemsNfs ; then
 	AC_CONFIG_FILES([rtemsNfs/proto/Makefile])
 	AC_CONFIG_FILES([rtemsNfs/Makefile])
 	AC_CONFIG_FILES([rtemsNfs/src/Makefile])
 	all_subdirs="${all_subdirs} rtemsNfs"
-fi]dnl
-)
+fi
 
 # looking for bundled NFS;
 build_rtems_nfs=no
@@ -292,8 +266,7 @@ if test ! "$build_rtems_nfs" = "no" ; then
 	enable_subdirs="${enable_subdirs} rtemsNfs"
 fi
 
-TILLAC_M4_IF_PRESENT([bsd_eth_drivers],
-[if test -d $srcdir/bsd_eth_drivers ; then
+if test -d $srcdir/bsd_eth_drivers ; then
 	AC_CONFIG_FILES([bsd_eth_drivers/Makefile])
 	AC_CONFIG_FILES([bsd_eth_drivers/libbsdport/Makefile])
 	AC_CONFIG_FILES([bsd_eth_drivers/if_pcn/Makefile])
@@ -312,11 +285,9 @@ TILLAC_M4_IF_PRESENT([bsd_eth_drivers],
 			enable_subdirs="${enable_subdirs} bsd_eth_drivers"
 		fi
 	fi
-fi]dnl
-)
+fi
 
-TILLAC_M4_IF_PRESENT([netboot],
-[if test -d $srcdir/netboot ; then
+if test -d $srcdir/netboot ; then
 	AC_CONFIG_FILES([netboot/Makefile])
 	all_subdirs="${all_subdirs} netboot"
 	case "$enable_rtemsbsp" in
@@ -337,12 +308,10 @@ TILLAC_M4_IF_PRESENT([netboot],
 		*)
 	;;
 	esac
-fi]dnl
-)
+fi
 
 system_subdir=
-TILLAC_M4_IF_PRESENT([system],
-[if test -d $srcdir/system ; then
+if test -d $srcdir/system ; then
 	all_subdirs="$all_subdirs system"
 	case "$enable_rtemsbsp" in
 		rce405)
@@ -354,8 +323,7 @@ TILLAC_M4_IF_PRESENT([system],
 			AC_CONFIG_SUBDIRS([system])
 		;;
 	esac
-fi]dnl
-)
+fi
 
 AC_SUBST([system_subdir])
 
