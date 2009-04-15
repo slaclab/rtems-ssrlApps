@@ -10,6 +10,8 @@ lib_LIBRARIES             = librtemsAltivec.a
 
 EXTRA_DIST                = ppc_stack_probe.c
 
+psim_bsp_DEFINES          = -DPSIM
+
 # Notes about compiler flags:
 #
 # -mno-altivec
@@ -37,6 +39,7 @@ EXTRA_DIST                = ppc_stack_probe.c
 #   then both, -mabi=altivec and -mvsave=yes are needed.
 #
 AM_CFLAGS              += -mno-altivec -mabi=altivec -mvrsave=no
+AM_CPPFLAGS            += $(@rtems_bsp@_bsp_DEFINES)
 
 bin_PROGRAMS            = vec
 vec_SOURCES             =
