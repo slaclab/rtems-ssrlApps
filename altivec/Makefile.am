@@ -38,7 +38,7 @@ psim_bsp_DEFINES          = -DPSIM
 # NOTE: If you DO want the compiler to maintain vrsave
 #   then both, -mabi=altivec and -mvsave=yes are needed.
 #
-AM_CFLAGS              += -mno-altivec -mabi=altivec -mvrsave=no
+AM_CFLAGS              += -mno-altivec -mabi=no-altivec -mvrsave=no
 AM_CPPFLAGS            += $(@rtems_bsp@_bsp_DEFINES)
 
 bin_PROGRAMS            = vec
