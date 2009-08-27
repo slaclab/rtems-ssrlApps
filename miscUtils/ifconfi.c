@@ -84,7 +84,7 @@ int                rval = -1;
 		goto cleanup;
 	}
 	if ( rtems_bsdnet_ifconfig(nam,SIOCSIFADDR,&sin.sin) ) {
-		fprintf(stderr,"Unable to set IP address on '%s' (%s)\n", nam, strerror(errno));
+		fprintf(stderr,"Unable to set IP address on '%s'\n",nam);
 		goto cleanup;
 	}		
 	if ( msk_s ) {
@@ -93,7 +93,7 @@ int                rval = -1;
 			goto cleanup;
 		}
 		if ( rtems_bsdnet_ifconfig(nam,SIOCSIFNETMASK,&sin.sin) ) {
-			fprintf(stderr,"Unable to set NETMASK address on '%s' (%s)\n", nam, strerror(errno));
+			fprintf(stderr,"Unable to set NETMASK address on '%s'\n",nam);
 			goto cleanup;
 		}
 	}
@@ -102,7 +102,7 @@ cleanup:
 	if ( rval ) {
 		flags = 0;
 		if ( rtems_bsdnet_ifconfig(nam, SIOCSIFFLAGS, &flags ) ) {
-			fprintf(stderr,"Unable to bring '%s' DOWN (%s)\n", nam, strerror(errno));
+			fprintf(stderr,"Unable to bring '%s' DOWN\n", nam);
 		}
 	}
 	return rval;

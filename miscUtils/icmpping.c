@@ -167,19 +167,8 @@ extern unsigned long long Read_long_timer();
 #endif
 #else
 #include <rtems/rtems/clock.h>
-static inline unsigned long
-TICKS_PER_S(void)
-{
-rtems_interval x;
-	rtems_clock_get(RTEMS_CLOCK_GET_TICKS_PER_SECOND, &x);
-	return (unsigned long)x;
-}
-
-static inline unsigned long
-US_PER_TICK(void)
-{
-	return 1000000/TICKS_PER_S();
-}
+#define TICKS_PER_S (((unsigned long)1000000)/_TOD_Microseconds_per_tick)
+#define US_PER_TICK _TOD_Microseconds_per_tick
 #endif
 
 int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
@@ -196,8 +185,7 @@ int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
   rtems_interval     rcv_time;
   n_short            id = (n_short) (((unsigned long) ping) & 0xffff);
   struct timeval     tv;
-  unsigned long      tps  = TICKS_PER_S;
-  unsigned long      uspt = US_PER_TICK;
+  unsigned long      tps = TICKS_PER_S;
   rtems_interval     timeout;
 
   if(!ping) {
@@ -249,7 +237,7 @@ int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
     rcv_time = timeout - rcv_time;
     /* Set timeout */
     tv.tv_sec  = (rcv_time / tps);
-    tv.tv_usec = (rcv_time % tps) * uspt;
+    tv.tv_usec = (rcv_time % tps) * US_PER_TICK;
     if(setsockopt(ping->socket, SOL_SOCKET,
 		  SO_RCVTIMEO, (char*)&(tv),  sizeof(tv))<0)
     {
@@ -290,7 +278,7 @@ int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
     {
       if(trip_time)
       {
-	*trip_time = (rtems_interval)((int)rcv_time - (int)send_time) * uspt;
+	*trip_time = (rtems_interval)((int)rcv_time - (int)send_time) * US_PER_TICK;
       }
       /* Check if payload matches. */
       retval = (memcmp(ping->icmp_req->icmp_data,
