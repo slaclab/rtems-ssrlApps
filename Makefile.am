@@ -2,6 +2,15 @@ AUTOMAKE_OPTIONS=foreign
 
 ACLOCAL_AMFLAGS= -I./m4
 
+# make sure any third-party makefile
+# inherits these settings which
+# may be embedded in installation paths...
+# (This is some hack)
+export rtems_bsp
+export RTEMS_BSP
+export enable_rtemsbsp
+export package_subdir
+
 SUBDIRS=. @enable_subdirs@
 
 DIST_SUBDIRS= @all_subdirs@
