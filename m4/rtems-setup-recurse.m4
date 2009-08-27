@@ -189,7 +189,9 @@ dnl		AC_SUBST(rtems_gccspecs,   [$tillac_rtems_gccspecs])
 dnl		AC_SUBST(rtems_cpu_cflags, [$tillac_rtems_cpu_cflags])
 dnl		AC_SUBST(rtems_cpu_asflags,["$tillac_rtems_cpu_asflags -DASM"])
 dnl		AC_SUBST(rtems_cppflags,   [$tillac_rtems_cppflags])
-			AC_SUBST(rtems_bsp,        [$enable_rtemsbsp])
+dnl allow a few synonyms
+			AC_SUBST([rtems_bsp],        [$enable_rtemsbsp])
+			AC_SUBST([enable_rtemsbsp],  [$enable_rtemsbsp])
 			AC_MSG_NOTICE([Setting DOWNEXT to .ralf])
 			DOWNEXT=.ralf
 			AC_MSG_NOTICE([Setting APPEXEEXT to .exe])
