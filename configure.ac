@@ -315,6 +315,13 @@ TILLAC_M4_IF_PRESENT([bsd_eth_drivers],
 fi]dnl
 )
 
+TILLAC_M4_IF_PRESENT([libtecla],
+[if test -d $srcdir/libtecla && test ! ${enable_tecla} = "no" ; then
+	all_subdirs="$all_subdirs libtecla"
+	enable_subdirs="$enable_subdirs libtecla"
+	AC_CONFIG_SUBDIRS([libtecla])
+fi])
+
 TILLAC_M4_IF_PRESENT([netboot],
 [if test -d $srcdir/netboot ; then
 	AC_CONFIG_FILES([netboot/Makefile])
@@ -322,7 +329,7 @@ TILLAC_M4_IF_PRESENT([netboot],
 	case "$enable_rtemsbsp" in
 		svgm|beatnik|uC5282|mvme3100)
 			if test "${enable_tecla}" = "no" ; then
-				AC_MSG_NOTICE(['netboot' package disabled because you disabled TECLA -- the monitor would depend on it])
+				AC_MSG_NOTICE(['netboot' package disabled because you disabled TECLA -- netboot would depend on it])
 			else
 				enable_subdirs="${enable_subdirs} netboot"
 				case "$enable_rtemsbsp" in
