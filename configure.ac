@@ -316,7 +316,7 @@ fi]dnl
 )
 
 TILLAC_M4_IF_PRESENT([libtecla],
-[if test -d $srcdir/libtecla && test ! ${enable_tecla} = "no" ; then
+[if test -d $srcdir/libtecla && test ! "${enable_tecla}" = "no" ; then
 	all_subdirs="$all_subdirs libtecla"
 	enable_subdirs="$enable_subdirs libtecla"
 	AC_CONFIG_SUBDIRS([libtecla])
