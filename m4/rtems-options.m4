@@ -37,5 +37,16 @@ AC_DEFUN([TILLAC_RTEMS_OPTIONS],
 		can also fine-tune the installation using the usual --prefix, 
 		--exec-prefix, --libdir, --includedir etc. options]dnl
 		)
-	)]dnl
+	)
+	AC_ARG_WITH(package-subdir,
+		AC_HELP_STRING([--with-package-subdir=<path-fragment>],
+			[defines part of the default exec-prefix:
+             ${prefix}/${package_subdir}/${host_cpu}-${host_os}/${rtems_bsp}
+            This option is overridden by either of --enable-std-rtems-installdirs
+            and --exec-prefix. Defaults to 'target/ssrlApps']dnl
+		),
+		[AC_SUBST([package_subdir],[${with_package_subdir}])],
+		[AC_SUBST([package_subdir],[target/ssrlApps])]
+	)
+]dnl
 )
