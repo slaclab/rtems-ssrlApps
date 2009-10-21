@@ -8,6 +8,7 @@
 
 #define __RTEMS_VIOLATE_KERNEL_VISIBILITY__
 #include <rtems.h>
+#include <rtems/config.h>
 #include <libcpu/spr.h>
 #include <libcpu/cpuIdent.h>
 #include <assert.h>
@@ -51,7 +52,9 @@
  *  c) BSP must set MSR_VE
  *  d) All threads will be Altivec enabled with no need to call threadMkVec()
  */
-#undef  ALL_THREADS_ALTIVEC
+#ifdef __ALTIVEC__
+#define  ALL_THREADS_ALTIVEC
+#endif
 
 /* END of configurable section */
 
@@ -98,7 +101,8 @@ STATIC void    vec_thread_restart(rtems_tcb *executing, rtems_tcb *restartee);
 STATIC void    vec_thread_delete(rtems_tcb *executing, rtems_tcb *deletee);
 STATIC void    vec_thread_switch(rtems_tcb *executing, rtems_tcb *heir);
 
-STATIC rtems_extensions_table	vec_extension_tbl = {
+STATIC
+rtems_extensions_table	altivec_extension_tbl = {
 	thread_create: vec_thread_create,
 	thread_start:  vec_thread_start,
 	thread_restart: vec_thread_restart,
@@ -286,13 +290,14 @@ rtems_status_code sc;
 		printk(NAM": Warning: BSP should set MSR_VE early; doing it now...\n");
 		set_MSR_VE();	
 	}
-	printk(NAM": If built as 'ALL_THREADS_ALTIVEC' this must be in a initial extension slot\n");
-	return -1;
+	if ( _System_state_Get() >= SYSTEM_STATE_UP ) {
+		rtems_panic(NAM": If built as 'ALL_THREADS_ALTIVEC' this must be called before the system is up\n");
+	}
 #endif
 
 	if ( RTEMS_SUCCESSFUL != (sc = rtems_extension_create(
 									rtems_build_name('A','v','e','c'),
-									&vec_extension_tbl,
+									&altivec_extension_tbl,
 									(rtems_id*)&vec_extension_id)) ) {
 		rtems_error(sc, NAM": unable to create user extension\n");
 		return -1;
@@ -386,7 +391,7 @@ vec_thread_fixup_env(rtems_tcb *thread)
 	/* all threads are altivec; msr should be inherited
 	 * but we set it anyways
 	 */
-	thread->msr            |= MSR_VE;
+	thread->Registers.msr  |= MSR_VE;
 #else
 	thread->Registers.msr  &= ~MSR_VE;
 #endif
@@ -406,7 +411,7 @@ VecCtxt tcbext;
 	}
 	if ( get_tcp(new_task) ) {
 		/* initial extension uses slot 0; there must only be ONE extension using this */
-		rtems_fatal_error_occurred('V','E','C','2');
+		rtems_fatal_error_occurred(ERRID('V','E','C','2'));
 	}
 	set_tcp(new_task, tcbext);
 #endif
@@ -615,7 +620,7 @@ vec_thread_exited(rtems_tcb *executing)
 }
 #endif
 
-#ifndef ALL_THREADS_ALTIVEC
+#if !defined( ALL_THREADS_ALTIVEC ) && HAVE_CEXP
 int
 _cexpModuleFinalize(void *mod)
 {
