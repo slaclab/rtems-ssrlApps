@@ -85,6 +85,7 @@ AC_CHECK_DECL([BSP_commandline_string],
 	[AC_DEFINE([DECL_BSP_COMMANDLINE_STRING],1,[Whether BSP_commandline_string is declared in <bsp.h>])],,
 	[#include <rtems.h>
 	#include <bsp.h>])
+AC_CHECK_FUNCS([bsp_cmdline])
 
 TILLAC_M4_IF_PRESENT([telnetd],
 [if test -d $srcdir/telnetd ; then
