@@ -269,7 +269,7 @@ TILLAC_M4_IF_PRESENT([drvLan9118],
 	all_subdirs="${all_subdirs} drvLan9118"
 	case $enable_rtemsbsp in 
 		uC5282)
-			LANIPBASIC_SUPPORT=lan9118
+			LANIPBASIC_SUPPORT=ln9
 		;;
 		beatnik)
 			LANIPBASIC_SUPPORT=mve
