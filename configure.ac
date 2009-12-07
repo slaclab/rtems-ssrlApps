@@ -223,12 +223,40 @@ TILLAC_M4_IF_PRESENT([altivec],
 fi]dnl
 )
 
+TILLAC_M4_IF_PRESENT([bsd_eth_drivers],
+[if test -d $srcdir/bsd_eth_drivers ; then
+	AC_CONFIG_FILES([bsd_eth_drivers/Makefile])
+	AC_CONFIG_FILES([bsd_eth_drivers/libbsdport/Makefile])
+	AC_CONFIG_FILES([bsd_eth_drivers/if_pcn/Makefile])
+	AC_CONFIG_FILES([bsd_eth_drivers/if_le/Makefile])
+	AC_CONFIG_FILES([bsd_eth_drivers/if_em/Makefile])
+	AC_CONFIG_FILES([bsd_eth_drivers/if_fxp/Makefile])
+	AC_CONFIG_FILES([bsd_eth_drivers/if_re/Makefile])
+	AC_CONFIG_FILES([bsd_eth_drivers/if_bge/Makefile])
+	all_subdirs="${all_subdirs} bsd_eth_drivers"
+	if test "$ac_cv_func_pci_find_device" = "yes" ; then
+		if test "${host_cpu}" = i386 && test ! "${have_bspext}" = yes ; then
+			AC_MSG_NOTICE([Not building bsd_eth_drivers; on i386 you need libbspExt])
+		else
+			#FIXME: make these configurable options
+			ENBL_82542_SUPPORT=NO
+			ENBL_ICH8LAN_SUPPORT=YES
+			have_emdrv=yes
+			AC_SUBST([ENBL_82542_SUPPORT])
+			AC_SUBST([ENBL_ICH8LAN_SUPPORT])
+			enable_subdirs="${enable_subdirs} bsd_eth_drivers"
+		fi
+	fi
+fi]dnl
+)
+
 TILLAC_M4_IF_PRESENT([amdeth],
 [if test -d $srcdir/amdeth ; then
 	AC_CONFIG_FILES([amdeth/Makefile])
 	all_subdirs="${all_subdirs} amdeth"
 	if test "$ac_cv_func_pci_find_device" = "yes" ; then
 		enable_subdirs="${enable_subdirs} amdeth"
+		have_amddrv=yes
 	else
 		AC_MSG_NOTICE([Your BSP doesn't seem to have PCI; not building the amdeth driver])
 	fi
@@ -240,20 +268,30 @@ TILLAC_M4_IF_PRESENT([drvLan9118],
 	AC_CONFIG_FILES([drvLan9118/Makefile])
 	all_subdirs="${all_subdirs} drvLan9118"
 	case $enable_rtemsbsp in 
-		uC5282 | beatnik)
-			LANIPBASIC_SUPPORT="${enable_rtemsbsp}"
+		uC5282)
+			LANIPBASIC_SUPPORT=lan9118
+		;;
+		beatnik)
+			LANIPBASIC_SUPPORT=mve
 		;;
 		*)
-			if test "$ac_cv_func_pci_find_device" = "yes" ; then
-				LANIPBASIC_SUPPORT=pci
-			fi
+			LANIPBASIC_SUPPORT=
 		;;
 	esac
-	if test "${LANIPBASIC_SUPPORT+set}" = "set" ; then
+	if test "$ac_cv_func_pci_find_device" = "yes" ; then
+		if test "${have_emdrv+set}" = "set" ; then
+			LANIPBASIC_SUPPORT="$LANIPBASIC_SUPPORT e1k"
+		fi
+		if test "${have_amddrv+set}" = "set" ; then
+			LANIPBASIC_SUPPORT="$LANIPBASIC_SUPPORT pcn"
+		fi
+	fi
+	if test "${LANIPBASIC_SUPPORT}XX" = "XX" ; then
+		AC_MSG_NOTICE([lanIpBasic package not supported by this BSP -- not built])
+	else
 		enable_subdirs="${enable_subdirs} drvLan9118"
 		AC_SUBST(LANIPBASIC_SUPPORT)
-	else
-		AC_MSG_NOTICE([lanIpBasic package not supported by this BSP -- not built])
+		AC_SUBST([LANIPBASIC_PROG],['$(LANIPBASIC_SUPPORT:%=lanIpBasic_%$(EXEEXT))'])
 	fi
 fi]dnl
 )
@@ -293,31 +331,6 @@ if test ! "$build_rtems_nfs" = "no" ; then
 	enable_subdirs="${enable_subdirs} rtemsNfs"
 fi
 
-TILLAC_M4_IF_PRESENT([bsd_eth_drivers],
-[if test -d $srcdir/bsd_eth_drivers ; then
-	AC_CONFIG_FILES([bsd_eth_drivers/Makefile])
-	AC_CONFIG_FILES([bsd_eth_drivers/libbsdport/Makefile])
-	AC_CONFIG_FILES([bsd_eth_drivers/if_pcn/Makefile])
-	AC_CONFIG_FILES([bsd_eth_drivers/if_le/Makefile])
-	AC_CONFIG_FILES([bsd_eth_drivers/if_em/Makefile])
-	AC_CONFIG_FILES([bsd_eth_drivers/if_fxp/Makefile])
-	AC_CONFIG_FILES([bsd_eth_drivers/if_re/Makefile])
-	AC_CONFIG_FILES([bsd_eth_drivers/if_bge/Makefile])
-	all_subdirs="${all_subdirs} bsd_eth_drivers"
-	if test "$ac_cv_func_pci_find_device" = "yes" ; then
-		if test "${host_cpu}" = i386 && test ! "${have_bspext}" = yes ; then
-			AC_MSG_NOTICE([Not building bsd_eth_drivers; on i386 you need libbspExt])
-		else
-			#FIXME: make these configurable options
-			ENBL_82542_SUPPORT=NO
-			ENBL_ICH8LAN_SUPPORT=YES
-			AC_SUBST([ENBL_82542_SUPPORT])
-			AC_SUBST([ENBL_ICH8LAN_SUPPORT])
-			enable_subdirs="${enable_subdirs} bsd_eth_drivers"
-		fi
-	fi
-fi]dnl
-)
 
 TILLAC_M4_IF_PRESENT([libtecla],
 [if test -d $srcdir/libtecla && test ! "${enable_tecla}" = "no" ; then
