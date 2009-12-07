@@ -168,7 +168,7 @@ extern unsigned long long Read_long_timer();
 #else
 #include <rtems/rtems/clock.h>
 static inline unsigned long
-TICKS_PER_S(void)
+ticks_per_s_fn(void)
 {
 rtems_interval x;
 	rtems_clock_get(RTEMS_CLOCK_GET_TICKS_PER_SECOND, &x);
@@ -176,10 +176,12 @@ rtems_interval x;
 }
 
 static inline unsigned long
-US_PER_TICK(void)
+us_per_tick_fn(void)
 {
-	return 1000000/TICKS_PER_S();
+	return 1000000/ticks_per_s_fn();
 }
+#define TICKS_PER_S ticks_per_s_fn()
+#define US_PER_TICK us_per_tick_fn()
 #endif
 
 int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
