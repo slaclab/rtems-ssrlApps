@@ -32,15 +32,20 @@ AC_DEFUN([TILLAC_RTEMS_RESET_MAKEVARS],
 	CCAS="$tillac_rtems_ccas_orig"
 	CPP="$tillac_rtems_cpp_orig"
 	LDFLAGS="$tillac_rtems_ldflags_orig"
-	RTEMS_BSP_FAMILY="$tillac_rtems_family_orig"
-	RTEMS_BSP_INSTTOP="$tillac_rtems_insttop_orig"]dnl
+	RTEMS_BSP_FAMILY="$tillac_rtems_bsp_family_orig"
+	RTEMS_BSP_INSTTOP="$tillac_rtems_bsp_insttop_orig"]dnl
 )
 
 # Determine critical, BSP-specific build parameters from the
 # RTEMS makefiles. These parameters are cflags, gccspecs, ...
 #
-# Note: this macro should not be used directly. It is expanded from
-#       TILLAC_RTEMS_SETUP
+# Notes: this macro should not be used directly. It is expanded from
+#        TILLAC_RTEMS_SETUP
+#
+#        4.10 eliminated RTEMS_BSP_FAMILY. This macro sets
+#        RTEMS_BSP_FAMILY=$(RTEMS_BSP) if RTEMS_BSP_FAMILY is empty.
+#        Thus, RTEMS_BSP_FAMILY still works in our framework
+#        (but should be phased out eventually).
 #
 # TILLAC_RTEMS_MAKEVARS(HOST_SYSTEM, BSP)
 AC_DEFUN([TILLAC_RTEMS_MAKEVARS],
@@ -58,7 +63,7 @@ rtems_makevars:
 	@echo tillac_rtems_cpu_asflags=\'\\\$(CPU_ASFLAGS)\'
 	@echo tillac_rtems_ldflags=\'\\\$(AM_LDFLAGS) \\\$(LDFLAGS)\'
 	@echo tillac_rtems_cppflags=
-	@echo RTEMS_BSP_FAMILY=\'\\\$(RTEMS_BSP_FAMILY)\'
+	@echo RTEMS_BSP_FAMILY=\'\\\$(or \\\$(RTEMS_BSP_FAMILY),\\\$(RTEMS_BSP))\'
 	@echo RTEMS_BSP_INSTTOP=\'\\\$(PROJECT_RELEASE)\'
 EOF_
 ` ; then
