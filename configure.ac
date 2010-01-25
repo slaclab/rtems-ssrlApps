@@ -223,7 +223,7 @@ TILLAC_M4_IF_PRESENT([altivec],
 fi]dnl
 )
 
-TILLAC_M4_IF_PRESENT([bsd_eth_drivers],
+TILLAC_M4_IF_PRESENT([bsd_eth_drivers/libbsdport],
 [if test -d $srcdir/bsd_eth_drivers ; then
 	AC_CONFIG_FILES([bsd_eth_drivers/Makefile])
 	AC_CONFIG_FILES([bsd_eth_drivers/libbsdport/Makefile])
