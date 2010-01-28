@@ -27,5 +27,7 @@ bin_PROGRAMS      =telnetd
 
 telnetd_LINK      =$(OBJLINK)
 
+EXTRA_DIST        = check_passwd.c
+
 include $(top_srcdir)/rtems.am
 
