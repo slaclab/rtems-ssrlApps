@@ -52,7 +52,19 @@ AC_DEFUN([TILLAC_RTEMS_MAKEVARS],
 	[
 	AC_MSG_CHECKING([Determining RTEMS Makefile parameters for BSP:])
 dnl DOWNEXT is set in leaf.cfg and we don't include that
-	if _tillac_rtems_result=`make -s -f - rtems_makevars <<EOF_
+	AC_MSG_CHECKING([for 'gnu make'])
+    _tillac_make_command=""
+    for a in "$MAKE gmake gnumake make"; do
+        if [ -n "$a" && ( sh -c "$a --version" 2>/dev/null | grep GNU >/dev/null ) ] ; then
+			_tillac_make_command="$a"; break;
+		fi
+	done
+	if [ -z $_tillac_make_command ] ; then
+		AC_MSG_ERROR([No GNU make found!])	
+	else
+		AC_MSG_RESULT([found: $_tillac_make_command])
+	fi
+	if _tillac_rtems_result=`$_tillac_make_command -s -f - rtems_makevars <<EOF_
 include $with_rtems_top/$1/$2/Makefile.inc
 include \\\$(RTEMS_CUSTOM)
 include \\\$(CONFIG.CC)
