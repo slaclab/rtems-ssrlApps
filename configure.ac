@@ -274,6 +274,9 @@ TILLAC_M4_IF_PRESENT([drvLan9118],
 		beatnik)
 			LANIPBASIC_SUPPORT=mve
 		;;
+		mvme3100)
+			AC_CHECK_FUNCS([BSP_tsec_setup_1], [LANIPBASIC_SUPPORT=tsec], [LANIPBASIC_SUPPORT=])
+		;;
 		*)
 			LANIPBASIC_SUPPORT=
 		;;
