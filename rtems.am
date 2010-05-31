@@ -1,5 +1,4 @@
 if OS_IS_RTEMS
-RTEMS_BSP     = @rtems_bsp@
 # CC           += @rtems_gccspecs@
 # AM_CFLAGS    += @rtems_cpu_cflags@
 # CXX          += @rtems_gccspecs@
@@ -11,10 +10,6 @@ RTEMS_BSP     = @rtems_bsp@
 AM_CPPFLAGS   += -I$(top_builddir)/data/include
 AM_LDFLAGS    += -L$(top_builddir)/data/lib
 endif
-
-
-OBJLINK=$(CCLD) -nostdlib -Wl,-r -o $@
-OBJEXEEXT=.obj
 
 # Where tools that run on the host go
 #FIXME: where to put these?

@@ -115,10 +115,10 @@ AC_DEFUN([TILLAC_RTEMS_CONFIG_BSPS_RECURSIVE],
 			
 		AC_MSG_NOTICE([Creating BSP subdirectories and sub-configuring])
 		TILLAC_RTEMS_SAVE_MAKEVARS
-		for _tillac_rtems_bsp in $enable_rtemsbsp ; do
-			if test ! -d $_tillac_rtems_bsp ; then
-				AC_MSG_CHECKING([Creating $_tillac_rtems_bsp])
-				if mkdir $_tillac_rtems_bsp ; then
+		for rtems_bsp in $enable_rtemsbsp ; do
+			if test ! -d $rtems_bsp ; then
+				AC_MSG_CHECKING([Creating $rtems_bsp])
+				if mkdir $rtems_bsp ; then
 					AC_MSG_RESULT([OK])
 				else
 					AC_MSG_ERROR([Failed])
@@ -126,11 +126,13 @@ AC_DEFUN([TILLAC_RTEMS_CONFIG_BSPS_RECURSIVE],
 			fi
 			TILLAC_RTEMS_TRIM_CONFIG_DIR(_tillac_rtems_config_dir)
 			TILLAC_RTEMS_RESET_MAKEVARS
-			TILLAC_RTEMS_MAKEVARS(${host_cpu}-${host_os},$_tillac_rtems_bsp)
-			tillac_rtems_cppflags="$tillac_rtems_cppflags -I$with_rtems_top/${host_cpu}-${host_os}/$_tillac_rtems_bsp/lib/include"
-			TILLAC_RTEMS_EXPORT_MAKEVARS(${host_cpu}-${host_os},$_tillac_rtems_bsp)
-			AC_MSG_NOTICE([Running $_tillac_rtems_config_dir/[$]0 $_tillac_rtems_config_args --enable-rtemsbsp=$_tillac_rtems_bsp in $_tillac_rtems_bsp subdir])
-			eval \( cd $_tillac_rtems_bsp \; $SHELL $_tillac_rtems_config_dir/"[$]0" $_tillac_rtems_config_args --enable-rtemsbsp=$_tillac_rtems_bsp \)
+			TILLAC_RTEMS_MAKEVARS(${host_cpu}-${host_os},$rtems_bsp)
+			tillac_rtems_cppflags="$tillac_rtems_cppflags -I$with_rtems_top/${host_cpu}-${host_os}/$rtems_bsp/lib/include"
+			TILLAC_RTEMS_EXPORT_MAKEVARS(${host_cpu}-${host_os},$rtems_bsp)
+			AC_MSG_NOTICE([Running $_tillac_rtems_config_dir/[$]0 $_tillac_rtems_config_args --enable-rtemsbsp=$rtems_bsp in $rtems_bsp subdir])
+			# In case user uses ${RTEMS_BSP} on commandline
+			RTEMS_BSP=${rtems_bsp};
+			eval \( cd $rtems_bsp \; $SHELL $_tillac_rtems_config_dir/"[$]0" $_tillac_rtems_config_args --enable-rtemsbsp=$rtems_bsp \)
 		done
 		TILLAC_RTEMS_RESET_MAKEVARS
 		AC_MSG_NOTICE([Creating toplevel makefile])
@@ -191,12 +193,14 @@ dnl		AC_SUBST(rtems_cpu_asflags,["$tillac_rtems_cpu_asflags -DASM"])
 dnl		AC_SUBST(rtems_cppflags,   [$tillac_rtems_cppflags])
 dnl allow a few synonyms
 			AC_SUBST([rtems_bsp],        [$enable_rtemsbsp])
+			AC_SUBST([RTEMS_BSP],        [$enable_rtemsbsp])
 			AC_SUBST([enable_rtemsbsp],  [$enable_rtemsbsp])
 			AC_MSG_NOTICE([Setting DOWNEXT to .ralf])
 			DOWNEXT=.ralf
 			AC_MSG_NOTICE([Setting APPEXEEXT to .exe])
 			APPEXEEXT=.exe
 			TILLAC_RTEMS_VERSTEST
+			TILLAC_RTEMS_OBJLINK
 		fi
 	fi
 	fi
