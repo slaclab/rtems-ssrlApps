@@ -8,7 +8,7 @@
 #
 #  - if user says nothing then
 #
-#      (package_subdir defaults to: target/ssrlApps)
+#      (package_subdir defaults to: target/${PACKAGE_NAME})
 #
 #      exec-prefix -> ${prefix}/${package_subdir}/<cpu>/<bsp>/
 #      includedir  -> ${exec-prefix}/include
