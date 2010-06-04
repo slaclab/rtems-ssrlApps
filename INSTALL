@@ -13,7 +13,9 @@ tools:
 
  - usual (cross) compiler toolchain
  - 'ldep' utility from SSRL repository (this
-   is an additional build-tool).
+   is an additional build-tool -- however,
+   it is only required for the 'system', AKA
+   'GeSys' application).
 
 If you work with a CVS checkout then you also
 need
