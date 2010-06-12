@@ -38,15 +38,23 @@ AC_DEFUN([TILLAC_RTEMS_OPTIONS],
 		--exec-prefix, --libdir, --includedir etc. options]dnl
 		)
 	)
+	AC_ARG_VAR([SUPERPACKAGE_NAME],[Name of a collection of packages; used to define install subdir])
+	if test -z "${SUPERPACKAGE_NAME}" ; then
+		AC_MSG_NOTICE([SUPERPACKAGE_NAME was empty, overriding with PACKAGE_NAME: ${PACKAGE_NAME}])
+		SUPERPACKAGE_NAME="${PACKAGE_NAME}"
+	else
+		AC_MSG_NOTICE([SUPERPACKAGE_NAME was set: ${SUPERPACKAGE_NAME}, leaving alone])
+	fi
+    export SUPERPACKAGE_NAME
 	AC_ARG_WITH(package-subdir,
 		AC_HELP_STRING([--with-package-subdir=<path-fragment>],
 			[defines part of the default exec-prefix:
              ${prefix}/${package_subdir}/${host_cpu}-${host_os}/${rtems_bsp}
             This option is overridden by either of --enable-std-rtems-installdirs
-            and --exec-prefix. Defaults to 'target/${PACKAGE_NAME}']dnl
+            and --exec-prefix. Defaults to 'target/${SUPERPACKAGE_NAME}']dnl
 		),
 		[AC_SUBST([package_subdir],[${with_package_subdir}])],
-		[AC_SUBST([package_subdir],[target/${PACKAGE_NAME}])]
+		[AC_SUBST([package_subdir],['target/${SUPERPACKAGE_NAME}'])]
 	)
 ]dnl
 )
