@@ -1,0 +1,26 @@
+2010/06/11 T.S.:
+ - ChangeLog: added.
+ - multilib-fix.m4:       BUGFIX.
+     pass CXX, F77, GCJ, GFORTRAN in addition to CC to sub-configure.
+ - rtems-bsp-postlink.m4: BUGFIX.
+     'motorola_powerpc' RTEMS_BSP_FAMILY doesn't work anymore (deprecated).
+     Hence, use BSP name (mcp750, mtx603e, mvme2100, mvme2307) as a discriminator
+     for RTEMS_BSP_POSTLINK_CMDS.
+ - rtems-isrtems.m4:
+     Added test for either --with-rtems-top not given OR --host=*rtems* given
+     (i.e., we are NOT at the top of a recursive configuration process).
+ - rtems-options.m4:
+     Base default 'package_subdir' on new SUPERPACKAGE_NAME rather than PACKAGE_NAME.
+     Introduced new AC_ARG_VAR SUPERPACKAGE_NAME which is also passed in the 
+     environment to sub-configures so that all sub-packages are installed to
+     the same 'package_subdir'.
+ - rtems-setup-recurse.m4:
+     o Use new TILLAC_RTEMS_NOT_CONFIG_TOP macro instead of explicit test.
+     o BUGFIX: need to set ACLOCAL_AMFLAGS=-I./m4 in created makefile.top.am
+       so that maintainer-mode works as expected.
+ - rtems-tools.m4:
+     o Omit check for tools if we are at the top of a recursive configuration
+       (here, the check looks for *native* tools which may not be present!).
+       Added a horrible hack for CC/CXX since AC_PROG_CC, AC_PROG_CXX must
+       not be conditionally expanded. Instead, if we are at a config-top we
+       use a hacked shell script that just gets us around the (native) CC/GXX test.
