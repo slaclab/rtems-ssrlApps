@@ -30,7 +30,7 @@
 #
 # TILLAC_RTEMS_CONFIG_CPUS_RECURSIVE
 AC_DEFUN([TILLAC_RTEMS_CONFIG_CPUS_RECURSIVE],
-	[if test ! "${with_rtems_top+set}" = "set" || TILLAC_RTEMS_HOSTOS_IS_RTEMS ; then : ; else
+	[if TILLAC_RTEMS_NOT_CONFIG_TOP ; then : ; else
 	# with_rtems_top is set but host_os is not *rtems*, i.e.,
 	# we have to figure out a list of CPUs/arches that are installed.
 	AC_MSG_CHECKING([for all installed CPUs/architectures])
@@ -216,6 +216,7 @@ dnl m4_syscmd is executed when aclocal is run
 m4_syscmd([cat - > makefile.top.am <<'EOF_'
 AUTOMAKE_OPTIONS=foreign
 SUBDIRS=@the_subdirs@
+ACLOCAL_AMFLAGS=-I./m4
 # When making a distribution we only want to 
 # recurse into (any) one single BSP subdir.
 DIST_SUBDIRS=@the_distsub@
