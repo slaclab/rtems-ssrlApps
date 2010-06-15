@@ -49,6 +49,7 @@ while getopts "cgo:" opt ; do
 		;;
 	esac
 	shift
+	OPTIND=1
 done
 if [ x"${c_seen}" = "xyes" ] && [ ! x"${o_seen}" = "xyes" ] ; then
 	srcnam=`basename $1 | sed -e 's/[.][^.]*$//g'`

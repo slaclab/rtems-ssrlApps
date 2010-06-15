@@ -1,3 +1,6 @@
+2010/06/15 T.S.:
+ - rtems-tools.m4. Reset OPTIND=1 after 'shift'. Older bash doesn't do so
+   by itself!
 2010/06/11 T.S.:
  - ChangeLog: added.
  - multilib-fix.m4:       BUGFIX.
