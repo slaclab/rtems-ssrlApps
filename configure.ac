@@ -58,6 +58,16 @@ TILLAC_M4_IF_PRESENT([libbspExt],
 fi]dnl
 )
 
+#Maybe libbspExt is already installed?
+if test ! "${have_bspext}" = "yes" ; then
+	AC_CHECK_LIB([bspExt],[bspExtInit],
+		[AC_MSG_NOTICE([Using existing libbspExt])
+		 have_bspext=yes
+		],
+		,
+		TILLAC_RTEMS_CHECK_LIB_ARGS)
+fi
+
 TILLAC_M4_IF_PRESENT([rtems-gdb-stub],
 [if test -d $srcdir/rtems-gdb-stub; then
 	AC_CONFIG_FILES([rtems-gdb-stub/Makefile])
@@ -234,9 +244,10 @@ TILLAC_M4_IF_PRESENT([bsd_eth_drivers/libbsdport],
 	AC_CONFIG_FILES([bsd_eth_drivers/if_re/Makefile])
 	AC_CONFIG_FILES([bsd_eth_drivers/if_bge/Makefile])
 	all_subdirs="${all_subdirs} bsd_eth_drivers"
-	if test "$ac_cv_func_pci_find_device" = "yes" ; then
-		if test "${host_cpu}" = i386 && test ! "${have_bspext}" = yes ; then
-			AC_MSG_NOTICE([Not building bsd_eth_drivers; on i386 you need libbspExt])
+	if test "${ac_cv_func_pci_find_device}" = "yes" ; then
+		AC_CHECK_FUNC([BSP_install_rtems_shared_irq_handler])
+		if test ! "${ac_cv_func_BSP_install_rtems_shared_irq_handler}" = "yes" && test ! "${have_bspext}" = "yes" ; then
+			AC_MSG_NOTICE([Not building bsd_eth_drivers; BSP_install_rtems_shared_irq_handler support or libbspExt required!])
 		else
 			#FIXME: make these configurable options
 			ENBL_82542_SUPPORT=NO
