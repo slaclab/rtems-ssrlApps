@@ -55,7 +55,11 @@ void *rval;
 void *vec_realloc(void *p, size_t s)
 {
 void              *pu, *pold;
+#if ISMINVERSION(4,9,99)
+uintptr_t         old_size;
+#else
 size_t            old_size;
+#endif
 rtems_status_code sc;
 
 	if (_System_state_Is_up(_System_state_Get())) {
