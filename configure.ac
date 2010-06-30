@@ -86,6 +86,7 @@ fi]dnl
 AC_MSG_NOTICE([Checking for PCI support of your BSP])
 # No use to use a 'CHECKING' message; AC_CHECK_FUNC already reports...
 AC_CHECK_FUNC(pci_find_device)
+AC_CHECK_FUNC(_CPU_Initialize_altivec)
 
 # BSP_commandline_string is not a function but
 # the macro just checks if it can link the symbol
@@ -325,7 +326,7 @@ AC_MSG_CHECKING([whether we should build unbundled NFS])
 # Note the 5th argument; linking would fail because
 # the application usually supplies rtems_bsdnet_config.
 # In order to link, we create a dummy symbol.
-AC_CHECK_LIB([nfs],[nfsMount],
+AC_CHECK_LIB([nfs],[nfsInit],
 	[AC_MSG_NOTICE([Using RTEMS bundled NFS])
 	 AC_SUBST([NFSLIB],["-lnfs"])
 	 if test -d $srcdir/rtemsNfs ; then
@@ -406,6 +407,7 @@ AC_SUBST([system_subdir])
 AC_SUBST([HOSTPROGRAM],['$(HOSTPROG)$(HOSTEXEEXT)'])
 AC_SUBST([installexechostbinprogs],[install-exechostbinPROGRAMS])
 
+AM_CONDITIONAL([HAVE_NATIVE_ALTIVEC],   [test "$ac_cv_func__CPU_Initialize_altivec" = "yes"])
 AM_CONDITIONAL([HAVE_CEXP],             [test "$have_cexp"            = "yes"])
 AM_CONDITIONAL([BUILD_RTEMS_NFS],       [test "$build_rtems_nfs"      = "yes"])
 AM_CONDITIONAL([HAVE_BUNDLED_TELNETD],  [test "$have_bundled_telnetd" = "yes"])
