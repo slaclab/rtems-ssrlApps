@@ -1,0 +1,3 @@
+Note that rtems-4.10 natively supports altivec (when built
+with -maltivec or a -mcpu=<cpu> that supports altivec) thus
+obsoleting this module/library.
