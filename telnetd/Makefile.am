@@ -8,7 +8,6 @@ EXEEXT=$(OBJEXEEXT)
 telnetd_SOURCES   =
 
 if HAVE_BUNDLED_TELNETD
-AM_CFLAGS        +=-DHAVE_BUNDLED_TELNETD
 telnetd_LDADD     =-ltelnetd
 else
 telnetd_SOURCES  +=telnetd.c pty.c des.c

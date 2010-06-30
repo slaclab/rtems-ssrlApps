@@ -1,4 +1,6 @@
  Changes since telnetd-1.3:
+  - added support for new-style (rtems-4.10 / telnetd configuration table)
+   	rtems_telnetd_initialize().
   - can use bundled telnetd and just generate a wrapper module
     for the cexp shell (define HAVE_BUNDLED_TELNETD)
   - move to GNU automake based build system
