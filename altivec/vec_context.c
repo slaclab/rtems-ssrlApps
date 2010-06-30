@@ -6,6 +6,56 @@
  * Author: Till Straumann <strauman@slac.stanford.edu>, 2005
  */
 
+#if defined(HAVE_NATIVE_ALTIVEC) && !defined(__ALTIVEC__)
+#error "Bad configuration -- something is wrong"
+#endif
+
+#if defined(HAVE_NATIVE_ALTIVEC)
+
+#include <rtems.h>
+#include <libcpu/cpuIdent.h>
+#include <rtems/bspIo.h>
+#include <rtems/powerpc/registers.h>
+#include <stdint.h>
+
+/* Just implement traditional entry points for sake
+ * of binary bwds-compatibility...
+ */
+int
+vec_task_enable()
+{
+	return 0;
+}
+
+int
+vec_install_extension()
+{
+uint32_t msr;
+
+	/* NOTE: Unlike the original version this dummy version can be called
+	 *       multiple times...
+	 */
+
+	_CPU_MSR_GET(msr);
+
+	/* Verify that MSR_VE is enabled */
+	if ( ! (MSR_VE & msr) ) {
+		printk("Altivec Extension Dummy: MSR_VE should be enabled already!\n");
+		return -1;
+	}
+
+#ifndef PSIM
+	if ( ! ppc_cpu_has_altivec() ) {
+		printk("Altivec Extension Dummy: This CPU seems not to have AltiVec\n");
+		return -1;
+	}
+#endif
+
+	return 0;
+}
+
+#else
+
 #define __RTEMS_VIOLATE_KERNEL_VISIBILITY__
 #include <rtems.h>
 #include <rtems/config.h>
@@ -647,3 +697,5 @@ rtems_status_code sc;
 	return 0;
 }
 #endif
+
+#endif /* defined(HAVE_NATIVE_ALTIVEC) */

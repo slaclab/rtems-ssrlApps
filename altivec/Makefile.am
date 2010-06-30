@@ -10,7 +10,7 @@ lib_LIBRARIES             = librtemsAltivec.a
 
 EXTRA_DIST                = ppc_stack_probe.c
 
-psim_bsp_DEFINES          = -DPSIM
+psim_bspclass_DEFINES     = -DPSIM
 
 # Notes about compiler flags:
 #
@@ -24,7 +24,8 @@ psim_bsp_DEFINES          = -DPSIM
 #   *every* single file linked to the application must
 #   be compiled with -mabi=altivec (-mno-eabi should have
 #   the same effect as far as stack alignment is concerned.
-#   I don't know of any other effects -mabi=altivec has).
+#   mabi=altivec also allows for passing vector arguments
+#   int registers etc).
 #
 # -mvrsave=no
 #   All code should be compiled with -mvrsave=no. The
@@ -38,8 +39,12 @@ psim_bsp_DEFINES          = -DPSIM
 # NOTE: If you DO want the compiler to maintain vrsave
 #   then both, -mabi=altivec and -mvsave=yes are needed.
 #
+if HAVE_NATIVE_ALTIVEC
+AM_CPPFLAGS            += -DHAVE_NATIVE_ALTIVEC
+else
 AM_CFLAGS              += -mno-altivec -mabi=no-altivec -mvrsave=no
-AM_CPPFLAGS            += $(@rtems_bsp@_bsp_DEFINES)
+endif
+AM_CPPFLAGS            += $(@RTEMS_BSP_CLASS@_bspclass_DEFINES)
 
 bin_PROGRAMS            = vec
 vec_SOURCES             =
