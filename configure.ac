@@ -107,18 +107,49 @@ TILLAC_M4_IF_PRESENT([telnetd],
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <rtems.h>
 	#include <rtems/telnetd.h>]],
 	[[rtems_telnetd_initialize(0,0,0,0,0,0);]])],
-	[AC_MSG_RESULT([Yes])
-	 AC_CHECK_LIB([telnetd],[rtems_telnetd_initialize],
-		[AC_MSG_NOTICE([Using bundled telnetd library])
-		 have_bundled_telnetd=yes
-		],
-		[AC_MSG_NOTICE([Building unbundled telnetd support])
-		 have_bundled_telnetd=no
-		],
-		TILLAC_RTEMS_CHECK_LIB_ARGS)
+	[AC_MSG_RESULT([Yes -- old style rtems_telnetd_initialize w/o config table])
+	 have_bundled_telnetd=oldstyle
 	],
-	[AC_MSG_NOTICE([No; building unbundled telnetd support])]
-	)
+	[AC_MSG_RESULT([No])
+	AC_MSG_CHECKING([if bundled rtems_telnetd_initialize uses a config table])
+	AC_CHECK_TYPE([rtems_telnetd_config_table],
+		[AC_MSG_RESULT([new style rtems_telnetd_initialize with config table])
+		 have_bundled_telnetd=newstyle
+		],
+		[
+		AC_MSG_RESULT([No])
+		],
+		[#include <rtems.h>
+		 #include <rtems/telnetd.h>
+		])
+	])	
+	# We used to do 'AC_CHECK_LIB([telnetd])' here but that fails
+	# for 4.10 because the config table is missing. Just omit
+	# this paranoia test for now...
+	if ! test "${have_bundled_telnetd+set}" = "set" ; then
+		have_bundled_telnetd=no
+	fi
+	case "${have_bundled_telnetd}" in
+		oldstyle)
+			AC_MSG_NOTICE([Using bundled telnetd (oldstyle)])
+			AC_DEFINE([HAVE_BUNDLED_TELNETD],
+					  [1],
+					  [Defined to 1/2 if you have bundled telnetd without/with config table])
+		;;
+		newstyle)
+			AC_MSG_NOTICE([Using bundled telnetd (newstyle)])
+			AC_DEFINE([HAVE_BUNDLED_TELNETD],
+					  [2],
+					  [Defined to 1/2 if you have bundled telnetd without/with config table])
+		;;
+		*)
+			AC_MSG_NOTICE([Using unbundled telnetd])
+			have_bundled_telnetd=no
+		;;
+		esac
+		if test ! xx"${have_bundled_telnetd}" = xx"no" ; then
+			have_bundled_telnetd=yes
+		fi
 fi]dnl
 )
 
