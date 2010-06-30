@@ -1,3 +1,8 @@
+2010/06/30 T.S.:
+ - rtems-bsp-class.m4, rtems-setup-recurse.m4: Added RTEMS_BSP_CLASS which
+   essentially replaces RTEMS_BSP_FAMILY (gone with 4.10). The concept is 
+   still useful when we have to support features that are shared by a group
+   of BSPs.
 2010/06/15 T.S.:
  - rtems-tools.m4. Reset OPTIND=1 after 'shift'. Older bash doesn't do so
    by itself!

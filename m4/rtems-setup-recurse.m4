@@ -195,6 +195,7 @@ dnl allow a few synonyms
 			AC_SUBST([rtems_bsp],        [$enable_rtemsbsp])
 			AC_SUBST([RTEMS_BSP],        [$enable_rtemsbsp])
 			AC_SUBST([enable_rtemsbsp],  [$enable_rtemsbsp])
+			TILLAC_RTEMS_BSP_CLASS
 			AC_MSG_NOTICE([Setting DOWNEXT to .ralf])
 			DOWNEXT=.ralf
 			AC_MSG_NOTICE([Setting APPEXEEXT to .exe])
