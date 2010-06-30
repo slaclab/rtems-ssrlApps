@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <string.h>
@@ -28,7 +29,7 @@
 
 #define DEFSIZE 4
 
-static void dumpchars(char **pstr, char *end)
+static void dumpchars(unsigned char **pstr, unsigned char *end)
 {
 	printf("  ");
 	while ( *pstr < end ) {
@@ -53,7 +54,7 @@ int
 md(unsigned address, int count, int size)
 {
 int i = 0;
-char *oadd = (char*)address;
+unsigned char *oadd = (unsigned char*)address;
 	switch (size) {
 		default:	size=DEFSIZE;
 		case 1: case 2: case 4:
@@ -62,7 +63,7 @@ char *oadd = (char*)address;
 	while ( i < count) {
 		if ( i%16 == 0 ) {
 			if (i) {
-				dumpchars(&oadd, (char*)address);
+				dumpchars(&oadd, (unsigned char*)address);
 			}
 			printf("\n0x%08x:", address);
 		}
@@ -74,7 +75,7 @@ char *oadd = (char*)address;
 
 	if (count > 0) {
 		printf("%*s",(((i+15)/16)*16 - i)/size * (2 + (int)strlen(PREF) + 2*size),"");
-		dumpchars(&oadd,(char*)address);
+		dumpchars(&oadd,(unsigned char*)address);
 	}
 	fputc('\n',stdout);
 	return 0;
@@ -110,7 +111,7 @@ unsigned v;
 			}
 			address += size;
 		} else {
-			switch (toupper(buf[0])) {
+			switch (toupper(((unsigned char)buf[0]))) {
 				case '^': size = -abs(size);
 					break;
 				case 'V': size = abs(size);
