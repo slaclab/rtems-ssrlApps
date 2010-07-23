@@ -69,7 +69,9 @@ Before the package can be successfully configured all
 required tools must be available including the 'ldep'
 tool.
 
-Either unpack a tarball or checkout from CVS:
+The 'ldep' sources may be found in the 'system/ldep'
+subdirectory. Otherwise you may have to obtain a tarball
+or checkout from CVS:
 
   > cvs -d /afs/slac/g/spear/cvsrep co -P ldep
 
