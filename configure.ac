@@ -435,13 +435,14 @@ AC_SUBST([system_subdir])
 # The only way automake does not append $(EXEEXT)
 # is if a PROGRAM is configure-substituted
 # (see automake doc 'EXEEXT')
-AC_SUBST([HOSTPROGRAM],['$(HOSTPROG)$(HOSTEXEEXT)'])
+AC_SUBST([HOSTPROGRAM],['$(HOSTPROG:%=%$(HOSTEXEEXT))'])
 AC_SUBST([installexechostbinprogs],[install-exechostbinPROGRAMS])
 
 AM_CONDITIONAL([HAVE_NATIVE_ALTIVEC],   [test "$ac_cv_func__CPU_Initialize_altivec" = "yes"])
-AM_CONDITIONAL([HAVE_CEXP],             [test "$have_cexp"            = "yes"])
-AM_CONDITIONAL([BUILD_RTEMS_NFS],       [test "$build_rtems_nfs"      = "yes"])
-AM_CONDITIONAL([HAVE_BUNDLED_TELNETD],  [test "$have_bundled_telnetd" = "yes"])
-AM_CONDITIONAL([NETBOOT_COMPRESSED],    [test "$netboot_compressed"   = "yes"])
+AM_CONDITIONAL([HAVE_CEXP],             [test "$have_cexp"             = "yes"])
+AM_CONDITIONAL([BUILD_RTEMS_NFS],       [test "$build_rtems_nfs"       = "yes"])
+AM_CONDITIONAL([HAVE_BUNDLED_TELNETD],  [test "$have_bundled_telnetd"  = "yes"])
+AM_CONDITIONAL([NETBOOT_COMPRESSED],    [test "$netboot_compressed"    = "yes"])
+AM_CONDITIONAL([ENABLE_DIAG_HOSTPROGS], [test "$enable_diag_hostprogs" = "yes"])
 
 AC_OUTPUT
