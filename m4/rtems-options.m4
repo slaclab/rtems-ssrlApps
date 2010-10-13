@@ -56,5 +56,10 @@ AC_DEFUN([TILLAC_RTEMS_OPTIONS],
 		[AC_SUBST([package_subdir],[${with_package_subdir}])],
 		[AC_SUBST([package_subdir],['target/${SUPERPACKAGE_NAME}'])]
 	)
+	AC_ARG_ENABLE(diag-hostprogs,
+		AC_HELP_STRING([--enable-diag-hostprogs],
+			[Enable building of some (package-specific) diagnostic (host)
+             programs; probably only needed by experts])
+	)
 ]dnl
 )
