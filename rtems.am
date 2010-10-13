@@ -26,8 +26,9 @@ preinstall:install-data install-exec
 
 # a rule to link native programs
 #
-$(HOSTPROG)$(HOSTEXEEXT): $($(HOSTPROG)_OBJECTS) $($(HOSTPROG)_DEPENDENCIES)
-	$(HOSTCC) -o $@ $($(HOSTPROG)_OBJECTS) $($(HOSTPROG)_LDADD)
+.SECONDEXPANSION:
+$(HOSTPROG:%=%$(HOSTEXEEXT)): %$(HOSTEXEEXT): $$($$(@:%$(HOSTEXEEXT)=%)_OBJECTS) $($$(@:%$(HOSTEXEEXT)=%)_DEPENDENCIES)
+	$(HOSTCC) -o $@ $($(@:%$(HOSTEXEEXT)=%)_OBJECTS) $($(@:%$(HOSTEXEEXT)=%)_LDADD)
 
 # another hack; if we just enter the install-exechostbinPROGRAMS:
 # target on the left then automake will not emit a rule for installation
