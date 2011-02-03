@@ -36,15 +36,28 @@ int	rval, heapsz;
 	} 
 
 	_Thread_Disable_dispatch();
-	rval = (HEAP_GET_INFORMATION_SUCCESSFUL !=
-			_Heap_Get_information( &_Workspace_Area, &info));
+	rval = (
+			_Heap_Get_information( &_Workspace_Area, &info)
+#if ISMINVERSION(4,9,99)
+			, 0
+#else
+			!= HEAP_GET_INFORMATION_SUCCESSFUL
+#endif
+	       );
 	_Thread_Enable_dispatch();
 
 	if ( rval ) {
 		fprintf(stderr,"ERROR: unable to retrieve RTEMS workspace info\n");
 	} else {
-		printf("Workspace usage: free %db, used %db, configured size %db\n",
-				(unsigned)info.hi_free, (unsigned)info.hi_used, (unsigned)_Configuration_Table->work_space_size);
+		printf("Workspace usage: free %lub, used %lub, configured size %lub\n",
+				(unsigned long)info.hi_free,
+		        (unsigned long)info.hi_used,
+#if ISMINVERSION(4,9,0)
+				(unsigned long)rtems_configuration_get_work_space_size()
+#else
+				(unsigned long)_Configuration_Table->work_space_size
+#endif
+		      );
 	}
 
 	heapsz = malloc_free_space();

@@ -161,7 +161,7 @@ char	*line,*buf=0;
 	while ( (line=gl_get_line(gl,"monitor>",NULL,0)) ) {
 		int		argc;
 		char	*argv[20]; /* no overrun protection */
-		rtems_monitor_command_entry_t	*cmd;
+		const rtems_monitor_command_entry_t	*cmd;
 
 		free(buf);
 		if ( ! (buf=strdup(line)) ){
@@ -176,12 +176,15 @@ char	*line,*buf=0;
 		    !strcmp("quit",argv[0]))
 			break;
 
-		if ((cmd=rtems_monitor_command_lookup(
-						rtems_monitor_commands,
-						argc,
-						argv)))
+#if ISMINVERSION(4,9,99)
+		cmd = rtems_monitor_command_lookup(argv[0]);
+#else
+		cmd=rtems_monitor_command_lookup(rtems_monitor_commands, argc, argv);
+#endif
+
+		if ( cmd ) {
         	cmd->command_function(argc, argv, CMD2ARG(cmd), verbose);
-		else {
+		} else {
 			fprintf(stderr,"Command '%s' not found\n",argv[0]);
 		}
 	}
@@ -201,6 +204,15 @@ cleanup:
 	rtems_semaphore_release(monitorMutex);
 	return 0;
 }
+
+#if ISMINVERSION(4,9,99)
+int
+_cexpModuleFinalize(void *unused)
+{
+	fprintf(stderr,"RTEMS 4.10 eliminated 'rtems_monitor_erase_cmd()' -- cannot unload this module\n");
+	return -1;
+}
+#endif
 
 
 #ifdef __cplusplus
@@ -222,11 +234,14 @@ public:
 			rtems_monitor_insert_cmd(entries+i);
 	};
 	~CallUtils() {
-		unsigned i;
 		if (--nest) return;
-		for (i=0; i<NUMBEROF(entries); i++)
+#if ISMINVERSION(4,9,99)
+		nest++;
+#else
+		for (int i=0; i<NUMBEROF(entries); i++)
 			rtems_monitor_erase_cmd(entries+i);
 		rtems_semaphore_delete(monitorMutex);
+#endif
 	};
 static int nest;
 };
