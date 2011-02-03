@@ -12,7 +12,7 @@ AC_DEFUN([TILLAC_RTEMS_BSP_POSTLINK_CMDS],
 # convert ELF -> pure binary
 			RTEMS_BSP_POSTLINK_CMDS='$(OBJCOPY) -Obinary -R .comment -S $(basename $[@])$(APPEXEEXT) $[@]'
 		;;
-		mcp750|mtx603e|mvme2100|mvme2307)
+		mcp750|mtx603e|mvme2100|mvme2307|qemu)
 # convert ELF -> special PREP bootloader
 			RTEMS_BSP_POSTLINK_CMDS=\
 '$(OBJCOPY) -O binary -R .comment -S $(basename $[@])$(APPEXEEXT) rtems ;'\
