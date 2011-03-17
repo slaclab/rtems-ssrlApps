@@ -161,7 +161,10 @@ char	*line,*buf=0;
 	while ( (line=gl_get_line(gl,"monitor>",NULL,0)) ) {
 		int		argc;
 		char	*argv[20]; /* no overrun protection */
-		const rtems_monitor_command_entry_t	*cmd;
+#if ISMINVERSION(4,9,99)
+		const
+#endif
+		rtems_monitor_command_entry_t	*cmd;
 
 		free(buf);
 		if ( ! (buf=strdup(line)) ){
