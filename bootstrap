@@ -43,3 +43,7 @@ if test "$localhack" = "yes" ; then
 	export	ACLOCAL="$ACLOCAL -I `(cd \`dirname $0\`; pwd)`/autognu"
 fi
 autoreconf -i $force
+
+if test -d system/ldep ; then
+	(cd system/ldep; ./bootstrap)
+fi
