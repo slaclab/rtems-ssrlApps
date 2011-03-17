@@ -113,7 +113,7 @@ as well as RTEMS built and installed for your BSP(s).
 
    E.g., 
 
-     ../configure --with-rtems-top=/afs/slac/package/rtems/4.9.3/rtems_p0 \
+     ../configure --with-rtems-top=/afs/slac/package/rtems/4.9.3/target/rtems_p0 \
                   --prefix=/my/topdir
 
 4) Execute 'make'
