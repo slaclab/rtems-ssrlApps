@@ -129,10 +129,10 @@ AC_DEFUN([TILLAC_RTEMS_CONFIG_BSPS_RECURSIVE],
 			TILLAC_RTEMS_MAKEVARS(${host_cpu}-${host_os},$rtems_bsp)
 			tillac_rtems_cppflags="$tillac_rtems_cppflags -I$with_rtems_top/${host_cpu}-${host_os}/$rtems_bsp/lib/include"
 			TILLAC_RTEMS_EXPORT_MAKEVARS(${host_cpu}-${host_os},$rtems_bsp)
-			AC_MSG_NOTICE([Running $_tillac_rtems_config_dir/[$]0 $_tillac_rtems_config_args --enable-rtemsbsp=$rtems_bsp in $rtems_bsp subdir])
+			AC_MSG_NOTICE([Running $_tillac_rtems_config_dir/[$]0 $_tillac_rtems_config_args --enable-rtemsbsp=$rtems_bsp rtems_bsp=$rtems_bsp in $rtems_bsp subdir])
 			# In case user uses ${RTEMS_BSP} on commandline
 			RTEMS_BSP=${rtems_bsp};
-			eval \( cd $rtems_bsp \; $SHELL $_tillac_rtems_config_dir/"[$]0" $_tillac_rtems_config_args --enable-rtemsbsp=$rtems_bsp \)
+			eval \( cd $rtems_bsp \; $SHELL $_tillac_rtems_config_dir/"[$]0" $_tillac_rtems_config_args --enable-rtemsbsp=$rtems_bsp rtems_bsp=$rtems_bsp \)
 		done
 		TILLAC_RTEMS_RESET_MAKEVARS
 		AC_MSG_NOTICE([Creating toplevel makefile])

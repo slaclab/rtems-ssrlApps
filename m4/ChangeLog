@@ -1,3 +1,6 @@
+2011/07/15 T.S.:
+ - rtems-setup-recurse.m4: propagate 'rtems_bsp' variable on command line when configuring
+   in BSP subdir (rtems_bsp=$rtems_bsp).
 2010/06/30 T.S.:
  - rtems-bsp-class.m4, rtems-setup-recurse.m4: Added RTEMS_BSP_CLASS which
    essentially replaces RTEMS_BSP_FAMILY (gone with 4.10). The concept is 
