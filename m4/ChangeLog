@@ -1,3 +1,6 @@
+2011/08/08 T.S.:
+ - rtems-bsp-postlink.m4: modified 'qemuprep' pattern (-> 'qemuprep*')
+   so that variants of the BSP are accepted.
 2011/07/15 T.S.:
  - rtems-bsp-postlink.m4: added 'qemuprep' bsp.
 2011/07/15 T.S.:
