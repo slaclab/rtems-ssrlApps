@@ -178,6 +178,12 @@ TILLAC_M4_IF_PRESENT([ntpNanoclock],
 	AC_CONFIG_FILES([ntpNanoclock/Makefile])
 	all_subdirs="${all_subdirs} ntpNanoclock"
 	enable_subdirs="${enable_subdirs} ntpNanoclock"
+	if case $enable_rtemsbsp in uC5282 ) true ;; *) false;; esac ; then
+		AC_MSG_CHECKING([Checking if PR1738 has been fixed])
+		AC_CHECK_DECL([__SRAMBASE.pitc_per_tick],
+           [AC_DEFINE([DECL_SRAM_PITC_PER_TICK],1,[Whether bsp.h declares pitc_per_tick in SRAM (PR1738)])],,[#include <rtems.h>
+                              #include <bsp.h>])
+	fi
 fi]dnl
 )
 
