@@ -58,6 +58,14 @@ TILLAC_M4_IF_PRESENT([libbspExt],
 fi]dnl
 )
 
+if test -d $srcdir/cexp ; then
+	all_subdirs="$all_subdirs cexp"
+	enable_subdirs="$enable_subdirs cexp"
+	AC_CONFIG_SUBDIRS([cexp])
+	AC_DEFINE(HAVE_CEXP,1,[Whether CEXP is installed])
+	have_cexp=yes
+fi
+
 #Maybe libbspExt is already installed?
 if test ! "${have_bspext}" = "yes" ; then
 	AC_CHECK_LIB([bspExt],[bspExtInit],
@@ -186,15 +194,6 @@ TILLAC_M4_IF_PRESENT([ntpNanoclock],
 	fi
 fi]dnl
 )
-
-
-if test -d $srcdir/cexp ; then
-	all_subdirs="$all_subdirs cexp"
-	enable_subdirs="$enable_subdirs cexp"
-	AC_CONFIG_SUBDIRS([cexp])
-	AC_DEFINE(HAVE_CEXP,1,[Whether CEXP is installed])
-	have_cexp=yes
-fi
 
 TILLAC_M4_IF_PRESENT([svgmWatchdog],
 [if test -d $srcdir/svgmWatchdog ; then
