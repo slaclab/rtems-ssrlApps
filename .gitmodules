@@ -1,0 +1,39 @@
+[submodule "cexp"]
+	path = cexp
+	url = ../cexpsh
+[submodule "svgmWatchdog"]
+	path = svgmWatchdog
+	url = ../rtems-svgmWatchdog
+[submodule "rtemsNfs"]
+	path = rtemsNfs
+	url = ../rtems-nfs
+[submodule "libbspExt"]
+	path = libbspExt
+	url = ../rtems-libbspExt
+[submodule "netboot"]
+	path = netboot
+	url = ../rtems-netboot
+[submodule "ntpNanoclock"]
+	path = ntpNanoclock
+	url = ../rtems-ntp-nanokernel
+[submodule "rtems-gdb-stub"]
+	path = rtems-gdb-stub
+	url = ../rtems-gdb-stub
+[submodule "coldfUtils"]
+	path = coldfUtils
+	url = ../rtems-drv-coldfire-utils
+[submodule "efence"]
+	path = efence
+	url = ../rtems-efence
+[submodule "amdeth"]
+	path = amdeth
+	url = ../rtems-drv-amdeth
+[submodule "drvLan9118"]
+	path = drvLan9118
+	url = ../rtems-drv-lan9118
+[submodule "system"]
+	path = system
+	url = ../rtems-GeSys
+[submodule "m4"]
+	path = m4
+	url = ../rtems-ac-macros
