@@ -11,6 +11,8 @@ AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([foreign 1.10])
 AM_MAINTAINER_MODE
 
+AH_TEMPLATE([NFS_SUPPORT])
+
 # Check for critical programs we need for building
 TILLAC_RTEMS_CHECK_TOOLS
 
@@ -365,6 +367,7 @@ AC_MSG_CHECKING([whether we should build unbundled NFS])
 AC_CHECK_LIB([nfs],[nfsInit],
 	[AC_MSG_NOTICE([Using RTEMS bundled NFS])
 	 AC_SUBST([NFSLIB],["-lnfs"])
+     nfs_enableval=2
 	 if test -d $srcdir/rtemsNfs ; then
 	 	AC_MSG_NOTICE([Building 'dirutils' only (from unbundled NFS)])
 		build_rtems_nfs=dirutils_only
@@ -372,10 +375,13 @@ AC_CHECK_LIB([nfs],[nfsInit],
 	[if test -d $srcdir/rtemsNfs ; then
 		 AC_MSG_NOTICE([Building unbundled NFS])
 		 build_rtems_nfs=yes
+         nfs_enableval=1
 		 AC_SUBST([NFSLIB],["-lrtemsNfs -lnfsprot"])
 	 fi],
 	TILLAC_RTEMS_CHECK_LIB_ARGS
 )
+AC_DEFINE_UNQUOTED([NFS_SUPPORT],[$nfs_enableval],[Whether to use NFS (2: bundled; 1 unbundled)])
+
 AC_MSG_RESULT([Building unbundled NFS: $build_rtems_nfs])
 
 if test ! "$build_rtems_nfs" = "no" ; then
