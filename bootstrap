@@ -14,8 +14,14 @@ while getopts "lf" theopt ; do
 	esac
 done
 
-if [ -d bsd_eth_drivers_upstream -a ! -e bsd_eth_drivers ] ; then
-  ln -s bsd_eth_drivers_upstream/bsd_eth_drivers .
+if [ -d bsd_eth_drivers_upstream ] ; then
+  if [ ! -L bsd_eth_drivers ] ; then
+    ln -s bsd_eth_drivers_upstream/bsd_eth_drivers .
+  fi
+  if [ ! -f bsd_eth_drivers_upstream/.gitignore ] ; then
+    echo '.gitignore'      >  bsd_eth_drivers_upstream/.gitignore
+    echo '**/Makefile.in'  >> bsd_eth_drivers_upstream/.gitignore
+  fi
 fi
 
 if test -d cexp ; then
