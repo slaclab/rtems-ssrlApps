@@ -37,3 +37,6 @@
 [submodule "m4"]
 	path = m4
 	url = ../rtems-ac-macros
+[submodule "bsd_eth_drivers_upstream"]
+	path = bsd_eth_drivers_upstream
+	url = https://git.rtems.org/joel/libbsdport.git

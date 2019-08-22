@@ -14,6 +14,10 @@ while getopts "lf" theopt ; do
 	esac
 done
 
+if [ -d bsd_eth_drivers_upstream -a ! -e bsd_eth_drivers ] ; then
+  ln -s bsd_eth_drivers_upstream/bsd_eth_drivers .
+fi
+
 if test -d cexp ; then
 	(cd cexp; make src)
 fi
@@ -43,3 +47,4 @@ if test "$localhack" = "yes" ; then
 	export	ACLOCAL="$ACLOCAL -I `(cd \`dirname $0\`; pwd)`/autognu"
 fi
 autoreconf -i $force
+
