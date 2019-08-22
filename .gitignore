@@ -9,3 +9,10 @@ configure
 depcomp
 install-sh
 missing
+compile
+dummycxx
+makefile.top.am
+makefile.top.in
+bsd_eth_drivers
+bsd_eth_drivers_upstream/bsd_eth_drivers/*/Makefile.in
+bsd_eth_drivers_upstream/bsd_eth_drivers/Makefile.in
