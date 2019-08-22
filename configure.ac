@@ -2,7 +2,9 @@ AC_PREREQ(2.62)
 
 m4_include(./m4/cvstag.m4)
 
-AC_INIT(ssrlApps, TILLAC_CVSTAG([$Name$]), <strauman@slac.stanford.edu>)
+AC_INIT(ssrlApps, TILLAC_GITTAG, <strauman@slac.stanford.edu>)
+
+TILLAC_CHECK_GITTAG
 
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
