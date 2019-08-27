@@ -30,8 +30,8 @@ if test "xx${RTEMS_TILL_MAKEVARS_SET}" = xxYES ; then
 CPPFLAGS="$CPPFLAGS -I`pwd`/data/include"
 LDFLAGS="$LDFLAGS -L`pwd`/data/lib"
 fi
-TILLAC_RTEMS_LDFLAGS="-L`pwd`/"'$RTEMS_BSP/data/lib'
-TILLAC_RTEMS_CPPFLAGS="-I`pwd`/"'$RTEMS_BSP/data/include'
+TILLAC_RTEMS_LDFLAGS='-L`pwd`/$RTEMS_BSP/data/lib'
+TILLAC_RTEMS_CPPFLAGS='-I`pwd`/$RTEMS_BSP/data/include'
 
 TILLAC_RTEMS_SETUP
 
