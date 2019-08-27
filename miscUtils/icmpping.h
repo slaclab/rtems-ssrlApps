@@ -15,6 +15,12 @@
 #ifndef SSRLAPPS_MISCUTILS_PING_H
 #define SSRLAPPS_MISCUTILS_PING_H
 
+#include <sys/param.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
