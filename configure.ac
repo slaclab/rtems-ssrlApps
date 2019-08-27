@@ -21,17 +21,22 @@ TILLAC_RTEMS_CHECK_TOOLS
 # knows how to make a config.h
 AM_CONFIG_HEADER(config.h)
 
+# Let this configure and sub-configures search
+# the temporary installdir for includes and libraries...
+AC_MSG_NOTICE([TILLAC MAKEVARS: >${RTEMS_TILL_MAKEVARS_SET}<])
+if test "xx${RTEMS_TILL_MAKEVARS_SET}" = xxYES ; then
+CPPFLAGS="$CPPFLAGS -I`pwd`/data/include"
+LDFLAGS="$LDFLAGS -L`pwd`/data/lib"
+fi
+TILLAC_RTEMS_LDFLAGS="-L`pwd`/"'$RTEMS_BSP/data/lib'
+TILLAC_RTEMS_CPPFLAGS="-I`pwd`/"'$RTEMS_BSP/data/include'
+
 TILLAC_RTEMS_SETUP
 
 AC_SUBST([enable_subdirs])
 AC_SUBST([all_subdirs])
 AC_SUBST([rtems_cpu],[$host_cpu])
 AC_SUBST([rtems_bsp],[$enable_rtemsbsp])
-
-# Let this configure and sub-configures search
-# the temporary installdir for includes and libraries...
-CPPFLAGS="$CPPFLAGS -I`pwd`/data/include"
-LDFLAGS="$LDFLAGS -L`pwd`/data/lib"
 
 dnl This doesn't work -- somehow automake gets confused
 dnl (perhaps because we have both, a Makefile and a makefile):
