@@ -19,8 +19,8 @@ if [ -d bsd_eth_drivers_upstream ] ; then
     ln -s bsd_eth_drivers_upstream/bsd_eth_drivers .
   fi
   if [ ! -f bsd_eth_drivers_upstream/.gitignore ] ; then
-    echo '.gitignore'      >  bsd_eth_drivers_upstream/.gitignore
-    echo '**/Makefile.in'  >> bsd_eth_drivers_upstream/.gitignore
+    echo '.gitignore'   >  bsd_eth_drivers_upstream/.gitignore
+    echo 'Makefile.in'  >> bsd_eth_drivers_upstream/.gitignore
   fi
 fi
 
