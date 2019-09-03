@@ -300,7 +300,6 @@ int startTelnetd(void (*cmd)(char *, void *), void *arg, int dontSpawn, int stac
 	rtems_status_code	sc;
 
 	printf("This is rtems-telnetd (modified by Till Straumann)\n");
-	printf("$Id$\n");
 	printf("Release %s\n", PACKAGE_VERSION);
 
 	if ( !telnetd_shell && !cmd ) {

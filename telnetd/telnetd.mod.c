@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* cexpsh loadable module support */
 
 /* T. Straumann <strauman@slac.stanford.edu>, 2003-2007 */
