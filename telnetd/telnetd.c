@@ -300,8 +300,7 @@ int startTelnetd(void (*cmd)(char *, void *), void *arg, int dontSpawn, int stac
 	rtems_status_code	sc;
 
 	printf("This is rtems-telnetd (modified by Till Straumann)\n");
-	printf("$Id$\n");
-	printf("Release $Name$\n");
+	printf("Release %s\n", PACKAGE_VERSION);
 
 	if ( !telnetd_shell && !cmd ) {
 		fprintf(stderr,"startTelnetd(): setup error - NO SHELL; bailing out\n");
