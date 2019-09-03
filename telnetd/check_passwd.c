@@ -1,4 +1,3 @@
-/* $Id$ */
 
 /* Read a password, encrypt it and compare to the encrypted 
  * password in the TELNETD_PASSWD environment variable.

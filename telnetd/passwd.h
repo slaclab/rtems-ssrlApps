@@ -1,4 +1,3 @@
-/* $Id$ */
 
 /* Define a default password for telnetd here.
  * NOTES:

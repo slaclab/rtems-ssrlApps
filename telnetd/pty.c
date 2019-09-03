@@ -18,7 +18,6 @@
  *     they may cleanup. Some magic hack works around termios
  *     limitation.
  * 
- *  $Id$
  */
 
 /*
