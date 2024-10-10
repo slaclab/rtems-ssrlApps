@@ -3,7 +3,7 @@
 	url = ../rtems-drv-amdeth
 [submodule "cexp"]
 	path = cexp
-	url = ../cexpsh
+	url = https://github.com/till-s/cexpsh.git
 [submodule "coldfUtils"]
 	path = coldfUtils
 	url = ../rtems-drv-coldfire-utils
