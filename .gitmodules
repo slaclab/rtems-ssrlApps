@@ -1,6 +1,6 @@
 [submodule "cexp"]
 	path = cexp
-	url = ../cexpsh
+	url = https://github.com/till-s/cexpsh.git
 [submodule "svgmWatchdog"]
 	path = svgmWatchdog
 	url = ../rtems-svgmWatchdog
