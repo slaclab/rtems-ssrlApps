@@ -37,3 +37,6 @@
 [submodule "m4"]
 	path = m4
 	url = ../rtems-ac-macros
+[submodule "rtems9p"]
+	path = rtems9p
+	url = git@github.com:JJL772/lw9p.git
