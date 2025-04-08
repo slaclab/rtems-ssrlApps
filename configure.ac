@@ -365,6 +365,15 @@ TILLAC_M4_IF_PRESENT([rtemsNfs],
 fi]dnl
 )
 
+TILLAC_M4_IF_PRESENT([rtems9p],
+[if test -d $srcdir/rtems9p ; then
+ 	AC_CONFIG_FILES([rtems9p/Makefile])
+	AC_CONFIG_FILES([rtems9p/src/Makefile])
+	all_subdirs="${all_subdirs} rtems9p"
+	enable_subdirs="${enable_subdirs} rtems9p"
+fi]dnl
+)
+
 # looking for bundled NFS;
 build_rtems_nfs=no
 AC_MSG_CHECKING([whether we should build unbundled NFS])
