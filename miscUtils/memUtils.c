@@ -4,6 +4,9 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
+#include <rtems.h>
+#include <rtems/score/protectedheap.h>
+#include <rtems/score/wkspace.h>
 
 #include <rtems.h>
 
@@ -48,6 +51,16 @@ static void dumpval(unsigned address, int size)
 		default:
 		break;
 	}
+}
+
+void
+workspaceUsage()
+{
+	Heap_Information_block info;
+	_Protected_heap_Get_information(&_Workspace_Area, &info);
+
+	printf("Workspace usage: %.2fK used, %.2fK free, %.2fK total\n", info.Used.total / 1024.,
+		info.Free.total / 1024., (info.Free.total + info.Used.total) / 1024.f);
 }
 
 int
@@ -302,6 +315,10 @@ CEXP_HELP_TAB_BEGIN(memutils)
 "otherwise, you must know your board's memory boundaries...\n"
 "The 'forceWrite' flags allows you to overwrite existing files\n",
 		int, coredump, (char *filename, unsigned start_addr, unsigned size, int forceWrite)
+	),
+	HELP(
+"Display workspace usage stats",
+		void, workspaceUsage, ()
 	),
 #ifdef __PPC__
 #if !ISMINVERSION(4,7,0)
