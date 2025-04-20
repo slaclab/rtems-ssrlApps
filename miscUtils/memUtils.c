@@ -7,6 +7,7 @@
 #include <rtems.h>
 #include <rtems/score/protectedheap.h>
 #include <rtems/score/wkspace.h>
+#include <rtems/malloc.h>
 
 #include <rtems.h>
 
@@ -61,6 +62,24 @@ workspaceUsage()
 
 	printf("Workspace usage: %.2fK used, %.2fK free, %.2fK total\n", info.Used.total / 1024.,
 		info.Free.total / 1024., (info.Free.total + info.Used.total) / 1024.f);
+}
+
+void
+mallocStats()
+{
+	rtems_malloc_statistics_t stats;
+	malloc_get_statistics(&stats);
+
+	printf("Malloc stats:\n");
+	printf("  malloc calls: %lu\n", (long unsigned)stats.malloc_calls);
+	printf("  calloc calls: %lu\n", (long unsigned)stats.calloc_calls);
+	printf("  realloc calls: %lu\n", (long unsigned)stats.realloc_calls);
+	printf("  memalign calls: %lu\n", (long unsigned)stats.memalign_calls);
+	printf("  free calls: %lu\n", (long unsigned)stats.free_calls);
+	printf("  total bytes alloc'ed: %llu\n", stats.lifetime_allocated);
+	printf("  total bytes freed: %llu\n", stats.lifetime_freed);
+	printf("  max alloc size: %lu\n", (long unsigned)stats.max_depth);
+	printf("  space available: %lu\n", (long unsigned)stats.space_available);
 }
 
 int
@@ -320,6 +339,10 @@ CEXP_HELP_TAB_BEGIN(memutils)
 "Display workspace usage stats",
 		void, workspaceUsage, ()
 	),
+HELP(
+	"Display malloc stats",
+			void, mallocStats, ()
+		),
 #ifdef __PPC__
 #if !ISMINVERSION(4,7,0)
 	HELP(
