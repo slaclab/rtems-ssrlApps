@@ -33,6 +33,8 @@
 #define ICMP_TIME_EXCEEDED ICMP_TIMXCEED
 #endif
 
+#define MAX_RETRIES 10
+
 struct traceroute_ctx
 {
   int fd;
@@ -163,7 +165,7 @@ do_traceroute(const struct traceroute_opts* opts, struct traceroute_result** res
   result->hops = 0;
   struct traceroute_node* last = NULL;
 
-  int hops = opts->max_hops, retries = 10;
+  int hops = opts->max_hops, retries = MAX_RETRIES;
   uint8_t ttl = 1;
   while (hops > 0) {
     /* We've retried too many times, probably lost our connection :( */
@@ -240,7 +242,7 @@ do_traceroute(const struct traceroute_opts* opts, struct traceroute_result** res
     }
   done:
     --hops;
-    retries = 10;
+    retries = MAX_RETRIES;
     ++ttl;
   }
 
