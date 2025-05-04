@@ -1,11 +1,14 @@
 #define __RTEMS_VIOLATE_KERNEL_VISIBILITY__
 #include <rtems.h>
 #include <rtems/libcsupport.h>
-//#include <rtems/score/cpu.h>
-//#include <rtems/score/thread.h>
 #include <stdio.h>
 
+#if __RTEMS_MAJOR__ <= 5
 #include <rtems/system.h>
+#else
+#include <rtems/score/protectedheap.h>
+#include <rtems/score/wkspace.h>
+#endif
 
 #define ISMINVERSION(ma,mi,re) \
 	(    __RTEMS_MAJOR__  > (ma)	\
@@ -35,6 +38,9 @@ int	rval, heapsz;
 		return -1;
 	} 
 
+#if ISMINVERSION(5, 0, 0)
+	rval = _Protected_heap_Get_information( &_Workspace_Area, &info ) != TRUE;
+#else
 	_Thread_Disable_dispatch();
 	rval = (
 			_Heap_Get_information( &_Workspace_Area, &info)
@@ -45,6 +51,7 @@ int	rval, heapsz;
 #endif
 	       );
 	_Thread_Enable_dispatch();
+#endif
 
 	if ( rval ) {
 		fprintf(stderr,"ERROR: unable to retrieve RTEMS workspace info\n");

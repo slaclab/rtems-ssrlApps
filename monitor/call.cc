@@ -10,7 +10,9 @@
 extern "C" {
 #endif
 
+#if __RTEMS_MAJOR__ <= 5
 #include <rtems/system.h>
+#endif
 
 #define ISMINVERSION(ma,mi,re) \
 	(    __RTEMS_MAJOR__  > (ma)	\
