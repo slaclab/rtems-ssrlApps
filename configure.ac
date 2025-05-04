@@ -12,6 +12,8 @@ AM_INIT_AUTOMAKE([foreign 1.10])
 AM_MAINTAINER_MODE
 
 AH_TEMPLATE([NFS_SUPPORT])
+AH_TEMPLATE([RTEMS_BSD_STACK])
+AH_TEMPLATE([RTEMS_LEGACY_STACK])
 
 # Check for critical programs we need for building
 TILLAC_RTEMS_CHECK_TOOLS
@@ -37,6 +39,7 @@ AC_SUBST([enable_subdirs])
 AC_SUBST([all_subdirs])
 AC_SUBST([rtems_cpu],[$host_cpu])
 AC_SUBST([rtems_bsp],[$enable_rtemsbsp])
+AC_SUBST([is_rtems_6])
 
 dnl This doesn't work -- somehow automake gets confused
 dnl (perhaps because we have both, a Makefile and a makefile):
@@ -48,6 +51,35 @@ dnl
 AC_CONFIG_FILES([Makefile])
 enable_subdirs=
 all_subdirs=
+
+# Check if we're RTEMS 6
+AC_COMPILE_IFELSE([
+#include <rtems.h>
+
+#if __RTEMS_MAJOR__ != 6
+#error We are not RTEMS 6
+#endif
+],[AC_MSG_NOTICE([Building for RTEMS 6])
+	is_rtems_6=1],
+  [AC_MSG_NOTICE([Building for RTEMS 4])
+  	is_rtems_6=0]
+)
+
+rtems_bsd_stack = no
+AC_MSG_CHECKING([Checking for rtems-libbsd])
+AC_CHECK_LIB([bsd],[rtems_bsd_setlogpriority],
+	[AC_MSG_NOTICE([Using libbsd])
+	 AC_SUBST([NETLIB],["-lbsd"])
+	 rtems_bsd_stack=yes
+	 AC_DEFINE_UNQUOTED([RTEMS_BSD_STACK],[1],[Defined if we are using the bsd stack])
+	],
+	[AC_MSG_NOTICE([Using legacy stack])
+	 AC_SUBST([NETLIB],["-lnetworking"])
+	 rtems_bsd_stack=no
+	 AC_DEFINE_UNQUOTED([RTEMS_LEGACY_STACK],[1],[Defined if we are using the legacy stack])
+	],
+	TILLAC_RTEMS_CHECK_LIB_ARGS
+)
 
 TILLAC_M4_IF_PRESENT([libbspExt],
 [if test -d $srcdir/libbspExt ; then
@@ -84,7 +116,7 @@ if test ! "${have_bspext}" = "yes" ; then
 fi
 
 TILLAC_M4_IF_PRESENT([rtems-gdb-stub],
-[if test -d $srcdir/rtems-gdb-stub; then
+[if test -d $srcdir/rtems-gdb-stub && test ${is_rtems_6} -eq 0; then
 	AC_CONFIG_FILES([rtems-gdb-stub/Makefile])
 	all_subdirs="$all_subdirs rtems-gdb-stub"
 	case ${host_cpu} in
@@ -137,7 +169,7 @@ TILLAC_M4_IF_PRESENT([telnetd],
 		[#include <rtems.h>
 		 #include <rtems/telnetd.h>
 		])
-	])	
+	])
 	# We used to do 'AC_CHECK_LIB([telnetd])' here but that fails
 	# for 4.10 because the config table is missing. Just omit
 	# this paranoia test for now...
@@ -167,6 +199,7 @@ TILLAC_M4_IF_PRESENT([telnetd],
 		fi
 fi]dnl
 )
+
 
 TILLAC_M4_IF_PRESENT([miscUtils],
 [if test -d $srcdir/miscUtils ; then
@@ -428,7 +461,7 @@ fi]dnl
 
 system_subdir=
 TILLAC_M4_IF_PRESENT([system],
-[if test -d $srcdir/system ; then
+[if test -d $srcdir/system && test ${is_rtems_6} -eq 0; then
 	all_subdirs="$all_subdirs system"
 	case "$enable_rtemsbsp" in
 		rce405)
@@ -460,5 +493,6 @@ AM_CONDITIONAL([BUILD_RTEMS_NFS],       [test "$build_rtems_nfs"       = "yes"])
 AM_CONDITIONAL([HAVE_BUNDLED_TELNETD],  [test "$have_bundled_telnetd"  = "yes"])
 AM_CONDITIONAL([NETBOOT_COMPRESSED],    [test "$netboot_compressed"    = "yes"])
 AM_CONDITIONAL([ENABLE_DIAG_HOSTPROGS], [test "$enable_diag_hostprogs" = "yes"])
+AM_CONDITIONAL([RTEMS_BSD_STACK],       [test "$rtems_bsd_stack"    = "yes"])
 
 AC_OUTPUT
