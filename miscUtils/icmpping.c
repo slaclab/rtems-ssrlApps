@@ -14,10 +14,14 @@
  *
  */
 #ifndef __rtems__
-#include "compat.h"
+# include "compat.h"
 #else
-#include <rtems.h>
-#include <rtems/timerdrv.h>
+# include <rtems.h>
+# if __RTEMS_MAJOR__ < 5
+#   include <rtems/timerdrv.h>
+# else
+#   include <rtems/clockdrv.h>
+# endif
 #endif
 
 #include <stdint.h>
@@ -171,7 +175,11 @@ static inline unsigned long
 ticks_per_s_fn(void)
 {
 rtems_interval x;
+#if __RTEMS_MAJOR__ >= 5
+  rtems_clock_get_ticks_per_second();
+#else
 	rtems_clock_get(RTEMS_CLOCK_GET_TICKS_PER_SECOND, &x);
+#endif
 	return (unsigned long)x;
 }
 
@@ -223,7 +231,12 @@ int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
   send_time = Read_timer();
 #else
   /* Get time for ping. */
+#if __RTEMS_MAJOR__ >= 5
+  send_time = rtems_clock_get_ticks_since_boot();
+#else
   (void) rtems_clock_get(RTEMS_CLOCK_GET_TICKS_SINCE_BOOT, &send_time);
+#endif
+
 #endif
 
   rcv_time = send_time; /* For first timeout calculation */
@@ -281,7 +294,11 @@ int rtems_ping_send(rtems_ping_t *ping, rtems_interval *trip_time)
 #ifdef USE_TIMER
 	rcv_time = Read_timer();
 #else
+  #if __RTEMS_MAJOR__ >= 5
+    rcv_time = rtems_clock_get_ticks_since_boot();
+  #else
     (void) rtems_clock_get(RTEMS_CLOCK_GET_TICKS_SINCE_BOOT, &rcv_time);
+  #endif
 #endif
 
     /* Check if packet is response to our ping */

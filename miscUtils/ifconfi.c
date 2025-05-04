@@ -4,9 +4,15 @@
 
 /* T.S, 2005,2006,2007 */
 
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <rtems.h>
 #include <rtems/rtems_bsdnet.h>
+#ifndef RTEMS_BSD_STACK
 #include <rtems/rtems_bsdnet_internal.h>
+#endif
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -28,10 +34,16 @@ typedef union {
 } sockaddr_alias_u;
 
 /* #ifdef ed for unknown reasons in the headers :-( */
+#ifndef RTEMS_BSD_STACK
 extern in_addr_t inet_lnaof(struct in_addr in);
 extern int inet_aton(const char *cp, struct in_addr *inp);
 extern struct in_addr inet_makeaddr(int net, int host);
 extern in_addr_t inet_netof(struct in_addr in);
+#else
+/* jl: afaik don't need these on the new bsd stack */
+#define rtems_bsdnet_semaphore_obtain() 0
+#define rtems_bsdnet_semaphore_release() 0
+#endif
 
 /* configure interface 'name' to use IP address 'addr' and netmask 'msk'
  * (both strings in IP 'dot' notation). Bring IF up.

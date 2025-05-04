@@ -3,7 +3,17 @@
 #include <config.h>
 #endif
 
+#include <rtems.h>
+
+#if __RTEMS_MAJOR__ < 5
 #include <rtems/system.h>
+#else
+#endif
+#include <rtems/thread.h>
+#include <rtems/score/thread.h>
+#include <rtems/score/object.h>
+#include <rtems/score/threadimpl.h>
+
 #include <rtems/rtems/tasks.h>
 
 #if defined(RTEMS_VERSION_ATLEAST) && RTEMS_VERSION_ATLEAST(4,8,99)
@@ -21,7 +31,8 @@
 rtems_status_code
 miscu_get_idle_uptime(struct timespec *pts)
 {
-#if defined(HAVE_HIGHRES_TIME)
+/* RTEMS6_TODO: How to get idle thread? */
+#if defined(HAVE_HIGHRES_TIME) && __RTEMS_MAJOR__ < 5
 rtems_status_code sc = RTEMS_SUCCESSFUL;
 int               key;
 
@@ -44,7 +55,23 @@ miscu_get_task_uptime(rtems_id tid, struct timespec *pts)
 {
 #if defined(HAVE_HIGHRES_TIME)
 Thread_Control    *tcb;
-Objects_Locations loc;
+
+#if __RTEMS_MAJOR__ >= 5
+	ISR_lock_Context isrl;
+	tcb = _Thread_Get (tid, &isrl);
+
+	int r = RTEMS_INVALID_ID;
+	if (_Objects_Is_local_id(tcb->Object.id)) {
+		uint64_t ns = _Timestamp_Get_as_nanoseconds(&tcb->cpu_time_used);
+		pts->tv_nsec = ns % 1000000000;
+		pts->tv_sec = ns / 1000000000;
+		r = RTEMS_SUCCESSFUL;
+	}
+	
+	_ISR_lock_ISR_enable(&isrl);
+	return r;
+#else
+	Objects_Locations loc;
 
 	tcb = _Thread_Get (tid, &loc);
 
@@ -66,6 +93,8 @@ Objects_Locations loc;
 		break;
 	}
 	return RTEMS_INVALID_ID;
+#endif // __RTEMS_MAJOR__ >= 5
+	
 #else
 	return RTEMS_NOT_IMPLEMENTED;
 #endif
