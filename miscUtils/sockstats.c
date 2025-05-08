@@ -4,7 +4,6 @@
 
 #ifdef __rtems__
 #include <rtems.h>
-#include <rtems/rtems_bsdnet_internal.h>
 #include <rtems/libio_.h>
 #else
 #define rtems_libio_number_iops 2000
@@ -27,6 +26,7 @@
 
 /* RTEMS6_TODO: Not porting this right now, will only do simple socket stats instead */
 #if __RTEMS_MAJOR__ < 5
+#include <rtems/rtems_bsdnet_internal.h>
 #define DO_RTEMS_SOCKSTATS
 #endif
 
