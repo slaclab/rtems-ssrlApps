@@ -17,3 +17,6 @@ bsd_eth_drivers
 /.cache/
 compile_commands.json
 /build/
+.waf*
+configure~
+.lock-waf*
