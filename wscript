@@ -1,30 +1,30 @@
 # WScript for ssrlApps
-rtems_version = "6"
+rtems_version = "7"
 
 import rtems_waf.rtems as rtems
+from waflib import Task
+from tools.waftools import (
+    get_includes, get_install_prefix, get_lib_paths,
+    build_module, install_headers, install_libs,
+    check_headers)
 import os
 
 ROOT = os.getcwd()
 
-def _check_headers(conf, headers: dict):
+def _get_text_seg_size(ctx) -> str|None:
     """
-    Checks for a list of headers and generates a define for them
-
-    Parameters
-    ----------
-    conf :
-        Config context
-    headers : dict
-        Mapping of header -> define
+    Returns the text segment size. If none, do not define it!
     """
-    for k, v in headers.items():
-        conf.check_cc(
-            use='rtemsdefaultconfig',
-            header_name=k,
-            features='c',
-            define_name=v
-        )
-
+    if ctx.options.ENABLE_TEXT_SEGMENT == 'default':
+        if ctx.env.RTEMS_ARCH in ['powerpc', 'arm']:
+            ctx.options.ENABLE_TEXT_SEGMENT = '0'
+        else:
+            ctx.options.ENABLE_TEXT_SEGMENT = 'no'
+    if ctx.options.ENABLE_TEXT_SEGMENT == 'no':
+        return None
+    if ctx.options.ENABLE_TEXT_SEGMENT == 'yes':
+        return '0x800000'
+    return ctx.options.ENABLE_TEXT_SEGMENT
 
 def _bsp_configure(conf, bsp, lib_confs : list = []):
     """
@@ -53,7 +53,7 @@ def _bsp_configure(conf, bsp, lib_confs : list = []):
 	)', quote=False)
 
     # Check for common headers
-    _check_headers(conf, {
+    check_headers(conf, {
         'sys/mman.h': 'HAVE_SYS_MMAN_H',
         'strings.h': 'HAVE_STRINGS_H',
         'sys/select.h': 'HAVE_SYS_SELECT_H',
@@ -61,147 +61,21 @@ def _bsp_configure(conf, bsp, lib_confs : list = []):
         'termios.h': 'HAVE_TERMIOS_H',
         'ncurses/term.h': 'HAVE_NCURSES_TERM_H',
         'ncurses/curses.h': 'HAVE_NCURSES_CURSES_H',
+        'sys/features.h': 'HAVE_SYS_FEATURES_H',
+        'link.h': 'HAVE_LINK_H',
+        'pthread.h': 'HAVE_PTHREADS',
+        'rtems/rtems/cache.h': 'HAVE_RTEMS_CACHE_H',
+        'rtems.h': 'HAVE_RTEMS_H',
     })
+    
+    conf.define('HAVE_TYPE_UINT32_T', '1')
+    conf.define('HAVE_TECLA', '1')
 
     conf.write_config_header(f'{conf.env.RTEMS_ARCH_BSP}/config.h')
 
     # Now configure all other libraries
     for c in lib_confs:
         c(conf, bsp)
-
-def _get_install_prefix(ctx) -> str:
-    """
-    Returns the install prefix for the specified BSP and arch
-
-    Parameters
-    ----------
-    ctx :
-        Build context
-    """
-    return f'${{PREFIX}}/{ctx.options.SSRLAPPS_VER}/{ctx.env.RTEMS_ARCH_RTEMS}/{ctx.env.RTEMS_BSP}'
-
-def _get_lib_paths(ctx) -> list[str]:
-    """
-    Returns a list of library search directories for the specified bsp
-
-    Parameters
-    ----------
-    ctx :
-        Build context
-    """
-    return [
-        f'{ctx.env.RTEMS_PATH}/{rtems.arch_bsp_lib_path(rtems_version, ctx.env.RTEMS_ARCH_BSP)}',
-        f'{ctx.env.RTEMS_PATH}/{ctx.options.SSRLAPPS_VER}/{rtems.arch_bsp_lib_path(rtems_version, ctx.env.RTEMS_ARCH_BSP)}'
-    ]
-
-def _get_includes(ctx) -> list[str]:
-    """
-    Returns a list of include directories
-
-    Parameters
-    ----------
-    ctx :
-        Build context
-    """
-    return [
-        f'{ctx.env.RTEMS_PATH}/{rtems.arch_bsp_include_path(rtems_version, ctx.env.RTEMS_ARCH_BSP)}',
-        '.'
-    ]
-
-def _install_headers(bld, headers: list[str], subdir: str = ''):
-    """
-    Installs some headers
-
-    Parameters
-    ----------
-    bld :
-        Build context
-    headers : list[str]
-        List of heaaders to install
-    subdir : str
-        Subdirectory within the include directory
-    """
-    bld.install_files(
-        f'{_get_install_prefix(bld)}/include/{subdir}',
-        headers
-    )
-
-def _install_libs(bld, libs: list[str], subdir: str = ''):
-    """
-    Installs some libraries
-
-    Parameters
-    ----------
-    bld :
-        Build context
-    libs : list[str]
-        List of libs to install
-    subdir : str
-        Subdirectory within the include directory
-    """
-    bld.install_files(
-        f'{_get_install_prefix(bld)}/lib/{subdir}',
-        libs
-    )
-
-
-def _build_module(bld, target: str, sources: list[str] = [], includes: list[str] = [], ldflags: list[str] = [], libs: list[str] = []):
-    """
-    Builds the specified module with the specified properties.
-    Does not link to the standard library or any other RTEMS libraries by default
-
-    Parameters
-    ----------
-    bld :
-        Build context
-    target : str
-        Name of the target file to generate
-    sources : list[str]
-        Source files to compile
-    includes : list[str]
-        Include directories to append
-    ldflags : list[str]
-        Linker flags to append
-    libs : list[str]
-        Libraries to link against
-    """
-
-    includes = includes.copy()
-    includes.extend(_get_includes(bld))
-
-    def link_task(task):
-        cmd = [
-            bld.env.CC[0],
-            '-o',
-            task.outputs[0].abspath(),
-            '-nostdlib',
-            '-Wl,-r',
-        ]
-        cmd.extend(bld.env.CFLAGS)
-        cmd.extend(bld.env.CPPFLAGS)
-        cmd.extend([f'-L{x}' for x in _get_lib_paths(bld)])
-        # Relative to build dir
-        cmd.extend([bld.env.CPPPATH_ST % x for x in task.generator.includes])
-        # Relative to srcdir
-        cmd.extend([bld.env.CPPPATH_ST % f'{ROOT}/{x}' for x in task.generator.includes])
-        cmd.extend(task.generator.ldflags)
-        cmd.extend([x.abspath() for x in task.inputs])
-        cmd.extend(task.generator.libs)
-        print(' '.join(cmd))
-        return task.exec_command(cmd)
-
-    bld(
-        rule=link_task,
-        source=[sources],
-        includes=includes,
-        libs=libs,
-        ldflags=ldflags,
-        target=target
-    )
-
-    # Install to rtems bsp subdir
-    bld.install_files(f'{_get_install_prefix(bld)}/bin', target)
-
 
 def build_miscUtils(bld):
     """
@@ -218,10 +92,10 @@ def build_miscUtils(bld):
         'miscUtils/loop.c',
     ]
 
-    _build_module(bld, 'miscUtils.obj', sources=source, includes=['miscUtils'])
+    build_module(bld, 'miscUtils.obj', sources=source, includes=['miscUtils'])
 
 def build_telnetd(bld):
-    _build_module(bld, 'telnetd.obj', ldflags=['-Wl,-u,rtems_telnetd_initialize'], libs=['-ltelnetd'])
+    build_module(bld, 'telnetd.obj', ldflags=['-Wl,-u,rtems_telnetd_initialize'], libs=['-ltelnetd'])
 
 def build_libbspExt(bld):
     """
@@ -233,17 +107,17 @@ def build_libbspExt(bld):
         'libbspExt/isrWrap.c',
         'libbspExt/memProbe.c'
     ]
-    _build_module(bld, target='bspExt.obj', sources=sources)
+    build_module(bld, target='bspExt.obj', sources=sources)
 
     bld(
         target='bspExt',
         features='c cstlib',
         source=sources,
-        includes=_get_includes(bld)
+        includes=get_includes(bld)
     )
 
-    bld.install_files(f'{_get_install_prefix(bld)}/lib', 'libbspExt.a')
-    bld.install_files(f'{_get_install_prefix(bld)}/include/bsp', ['libbspExt/bspExt.h'])
+    bld.install_files(f'{get_install_prefix(bld)}/lib', 'libbspExt.a')
+    bld.install_files(f'{get_install_prefix(bld)}/include/bsp', ['libbspExt/bspExt.h'])
 
 def build_monitor(bld):
     """
@@ -255,7 +129,7 @@ def build_monitor(bld):
         'monitor/stack.c'
     ]
 
-    _build_module(bld, 'monitor', sources=sources)
+    build_module(bld, 'monitor', sources=sources)
 
 def build_regexp(bld):
     """
@@ -273,11 +147,11 @@ def build_regexp(bld):
         target='spencer_regexp',
         features='c cstlib',
         source=sources,
-        includes=_get_includes(bld)
+        includes=get_includes(bld)
     )
 
-    _install_libs(bld, ['libspencer_regexp.a'])
-    _install_headers(bld, [f'{dir}/regexp/spencer_regexp.h'])
+    install_libs(bld, ['libspencer_regexp.a'])
+    install_headers(bld, [f'{dir}/regexp/spencer_regexp.h'])
 
 
 def conf_pmbfd(conf, bsp: str):
@@ -338,10 +212,10 @@ def build_pmbfd(bld):
         target='pmelf',
         features='c cstlib',
         source=pmelf_sources,
-        includes=_get_includes(bld) + ['cexp/pmbfd']
+        includes=get_includes(bld) + ['cexp/pmbfd']
     )
 
-    _install_headers(bld, [f'{dir}/pmelf.h'])
+    install_headers(bld, [f'{dir}/pmelf.h'])
 
     pmbfd_sources = [
         f'{dir}/bfd.c',
@@ -358,20 +232,156 @@ def build_pmbfd(bld):
         target='pmbfd',
         features='c cstlib',
         source=pmbfd_sources,
-        includes=_get_includes(bld)
+        includes=get_includes(bld)
     )
 
-    _install_libs(bld, ['libpmbfd.a', 'libpmelf.a'])
+    install_libs(bld, ['libpmbfd.a', 'libpmelf.a'])
 
 
 def build_tecla(bld):
     """
     Builds libtecla, which is needed for cexp
     """
-
+    dir = 'cexp/libtecla'
     sources = [
-
+        f'{dir}/chrqueue.c',
+        f'{dir}/cplfile.c',
+        f'{dir}/cplmatch.c',
+        f'{dir}/direader.c',
+        f'{dir}/errmsg.c',
+        f'{dir}/expand.c',
+        f'{dir}/freelist.c',
+        f'{dir}/getline.c',
+        f'{dir}/hash.c',
+        f'{dir}/history.c',
+        f'{dir}/homedir.c',
+        f'{dir}/ioutil.c',
+        f'{dir}/keytab.c',
+        f'{dir}/pathutil.c',
+        f'{dir}/pcache.c',
+        f'{dir}/stringrp.c',
+        f'{dir}/strngmem.c',
+        f'{dir}/version.c',
     ]
+    
+    bld(
+        target='tecla',
+        features='c cstlib',
+        source=sources,
+        includes=get_includes(bld) + ['cexp']
+    )
+    
+    bld(
+        target='tecla_r',
+        features='c cstlib',
+        source=sources,
+        includes=get_includes(bld) + ['cexp'],
+        defines=['_POSIX_C_SOURCE=199506L', 'PREFER_REENTRANT']
+    )
+
+    install_headers(bld, [f'{dir}/libtecla.h'])
+
+def build_cexp(bld):
+    """
+    Builds cexpsh
+    """
+    dir = f'cexp'
+    defines = []
+    libs = []
+    sources = []
+    includes = [dir, f'{dir}/regexp', 'cexp']
+    
+    # TODO: FIXME: implement this
+    defines += ['PACKAGE_VERSION="6_dev"']
+
+    # Generate the jump table generator
+    bld(
+        name='build_gentab',
+        rule=f'cc -o ${{TGT}} ${{SRC}}',
+        source=f'cexp/gentab.c',
+        target=f'gentab',
+    )
+
+    # Generate the jump table
+    bld(
+        name='generate_jumptab',
+        rule=f'./${{SRC}} -o ${{TGT}}',
+        target=f'{bld.out_dir}/{bld.env.RTEMS_ARCH_BSP}/cexp/jumptab.c',
+        source='gentab',
+        depends_on='build_gentab',
+    )
+    
+    defines += [
+        f'CEXP_TEXT_REGION_SIZE={_get_text_seg_size(bld)}'
+    ]
+    
+    # todo: if use_tecla
+    if True:
+        sources += [f'{dir}/teclastuff.c']
+        libs += ['tecla']
+        includes += [f'{dir}/libtecla']
+        defines += ['USETECLA=1']
+    
+    # todo: if enable_loader
+    if True:
+        sources += [f'{dir}/bfdstuff.c']
+        defines += ['USELOADER=1']
+    elif False: # todo: use_elfsyms
+        sources += [f'{dir}/elfsyms.c', f'{dir}/elfdlmap.c']
+    else:
+        sources += [f'{dir}/noloader.c']
+    
+    # todo: if use_pmbfd
+    if True:
+        libs += ['pmbfd']
+        defines += ['USEPMBFD=1', 'USE_PMBFD=1']
+        includes += [f'{dir}/pmbfd']
+    libs += ['pmelf']
+    
+    bld(
+        rule=f'bison -v -d -p cexp -o cexp/cexp.tab.c --header=cexp/cexp.tab.h ${{SRC}}',
+        target=f'cexp/cexp.tab.c cexp/cexp.tab.h',
+        source=f'{dir}/cexp.y'
+    )
+
+    sources += [
+        f'{dir}/cexp.c',
+        f'{dir}/ctyps.c',
+        f'{dir}/cexpsyms.c',
+        f'{dir}/vars.c',
+        f'{dir}/rshload.c',
+        f'{dir}/cexplock.c',
+        f'{dir}/cexpmod.c',
+        f'{dir}/cexp.tab.c',
+        f'{dir}/cexpveneer.c',
+        f'{dir}/getopt/mygetopt_r.c',
+        f'{dir}/help.c',
+        f'{dir}/cexpsegs.c',
+        f'{dir}/cexpsegs-alloc.c',
+        f'{dir}/wrap.c',
+        #f'jumptab.c',
+    ]
+    
+    bld(
+        target='cexp',
+        features='c cstlib',
+        source=sources,
+        use=libs,
+        includes=includes + get_includes(bld),
+        defines=defines,
+        depends_on='generate_jumptab',
+    )
+
+    #bld.add_manual_dependency(
+    #    bld.path.find_node(f'{dir}/ctyps.c'),
+    #    bld.path.find_or_declare(f'cexp/jumptab.c')
+    #)
+
+    #bld.add_manual_dependency(
+    #    #bld.path.find_or_declare(f'{bld.out_dir}/{bld.env.RTEMS_ARCH_BSP}/jumptab.c'),
+    #    bld.path.find_node(f'cexp'),
+    #    generate_jumptab,
+    #)
 
 
 #####################################################################
@@ -380,6 +390,11 @@ def build_tecla(bld):
 
 def build(bld):
     rtems.build(bld)
+
+    # Not suppporting for now...
+    if bld.env.RTEMS_BSP == 'psim':
+        return
+
     bld.env.CFLAGS += ['-O2', '-g']
     bld.env.CPPFLAGS += ['-DHAVE_CONFIG_H=1']
 
@@ -388,6 +403,8 @@ def build(bld):
 
     build_regexp(bld)
     build_pmbfd(bld)
+    build_tecla(bld)
+    build_cexp(bld)
 
     # TODO: Needs tecla from cexp!
     #build_monitor(bld)
@@ -405,6 +422,7 @@ def configure(conf):
     conf :
         Configuration context
     """
+    conf.env.ROOT = ROOT
 
     # These will be invoked per-BSP
     lib_confs = [
@@ -419,3 +437,24 @@ def init(ctx):
 def options(opt):
     rtems.options(opt)
     opt.add_option('--ssrl-version', dest='SSRLAPPS_VER', type=str, default='ssrlApps', help='ssrlApps patch level string (i.e. ssrlApps_p4)')
+    opt.add_option('--enable-text-segment', dest='ENABLE_TEXT_SEGMENT', type=str, default='default',
+                   help="""
+        Reserve <size> space in the CEXP executable for the .text
+        sections of loadable modules. This is required on powerpc
+        platforms with more than 32M of memory so that no far jumps
+        are needed.
+        <size> may be 'no' (disable feature), 'yes' (reserve default
+        [[8MB]]) or a number. If <size> is zero then the application
+        must provide the following two global variables:
+
+            unsigned long cexpTextRegionSize=<desired_size>;
+
+            unsigned char cexpTextRegion[<desired_size>];
+
+        defining the memory region used.
+		Alternatively, the application (or the linker script) may
+		provide symbols _cexpTextRegionStart/_cexpTextRegionEnd.
+        This option is ignored on platforms other than powerpc.
+		The default is 0.
+        """)
+
