@@ -1,4 +1,18 @@
-
+/**
+ * ----------------------------------------------------------------------------
+ * Company    : SLAC National Accelerator Laboratory
+ * ----------------------------------------------------------------------------
+ * Description: File utils
+ * ----------------------------------------------------------------------------
+ * This file is part of 'ssrlApps'. It is subject to the license terms in the
+ * LICENSE.txt file found in the top-level directory of this distribution,
+ * and at:
+ *    https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
+ * No part of 't9p', including this file, may be copied, modified,
+ * propagated, or distributed except according to the terms contained in the
+ * LICENSE.txt file.
+ * ----------------------------------------------------------------------------
+ **/
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -15,12 +29,11 @@ cat(const char* file)
     return -1;
   }
 
-  char buf[512];
-
   ssize_t l;
+  char buf[4096];
   while ((l = read(fd, buf, sizeof (buf)-1)) > 0) {
     buf[l] = 0;
-    puts(buf);
+    fwrite(buf, l, 1, stdout);
   }
 
   close(fd);
