@@ -16,10 +16,11 @@
 
 #include <stdio.h>
 #include <sched.h>
-#include <rtems/posix/pthread.h>
+#include <stdint.h>
 #include <rtems.h>
 #include <rtems/shell.h>
 #include <rtems/cpuuse.h>
+#include <rtems/posix/pthread.h>
 
 #ifdef HAVE_CEXP
 #include <cexpHelp.h>
@@ -27,14 +28,14 @@
 
 static void per_thread(Thread_Control* tcb)
 {
-    char name[32];
-    rtems_object_get_name(tcb->Object.id, sizeof(name), name);
-    printf("%6s initial_prio=%lld, current_prio=%lld, real_prio=%lld\n",
-        name,
-        (long long)tcb->Start.initial_priority,
-        (long long)tcb->current_priority,
-        (long long)tcb->real_priority
-    );
+  char name[32];
+  rtems_object_get_name(tcb->Object.id, sizeof(name), name);
+  printf("%6s initial_prio=%lld, current_prio=%lld, real_prio=%lld\n",
+    name,
+    (long long)tcb->Start.initial_priority,
+    (long long)tcb->current_priority,
+    (long long)tcb->real_priority
+  );
 }
 
 void taskList()
