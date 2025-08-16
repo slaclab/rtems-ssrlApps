@@ -39,4 +39,4 @@
 	url = ../rtems-ac-macros
 [submodule "rtems9p"]
 	path = rtems9p
-	url = git@github.com:JJL772/lw9p.git
+	url = https://github.com/slaclab/t9p.git
