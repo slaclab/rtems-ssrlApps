@@ -10,7 +10,6 @@ miscUtils_SOURCES      += ttyconfi.c icmpping.c sockstats.c
 miscUtils_SOURCES      += task_uptime.c
 miscUtils_SOURCES      += compat.h
 miscUtils_SOURCES      += exectime.c
-miscUtils_SOURCES      += traceroute.c
 miscUtils_SOURCES      += fileUtils.c
 miscUtils_SOURCES      += traceroute.c
 miscUtils_SOURCES      += miscTools.c
