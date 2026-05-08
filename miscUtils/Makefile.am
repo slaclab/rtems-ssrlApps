@@ -13,6 +13,7 @@ miscUtils_SOURCES      += exectime.c
 miscUtils_SOURCES      += fileUtils.c
 miscUtils_SOURCES      += traceroute.c
 miscUtils_SOURCES      += miscTools.c
+miscUtils_SOURCES      += ttcp.c
 
 include_HEADERS         = icmpping.h
 include_HEADERS        += ssrlAppsMiscUtils.h
